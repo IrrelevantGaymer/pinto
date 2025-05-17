@@ -38,11 +38,18 @@ instance Show a => Show (Atom a) where
         show col ++ ": " ++
         show a
 
-atomize :: FileName -> (Row, Col) -> String -> [Atom Char]
-atomize fileName (row, col) (x:xs) 
-    | x == '\n' = atomize fileName (row + 1, 1) xs
-    | otherwise = (Atom x fileName (row, col)) : atomize fileName (row, col + 1) xs
-atomize _ _ [] = []
+atomize :: [FileName] -> [String] -> [Atom Char]
+atomize filePaths srcs = concat $ map 
+    (uncurry (flip atomizeRec (1, 1))) 
+    (zip filePaths srcs)
+
+-- internal function for providing positions to each atom
+atomizeRec :: FileName -> (Row, Col) -> String -> [Atom Char]
+atomizeRec fileName (row, col) (x:xs) 
+    | x == '\n' = atomizeRec fileName (row + 1, 1) xs
+    | otherwise = (Atom x fileName (row, col)) : 
+                  atomizeRec fileName (row, col + 1) xs
+atomizeRec _ _ [] = []
 
 {- 
  - We do not restrict the output to Atom a because Atom 
