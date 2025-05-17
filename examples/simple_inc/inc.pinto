@@ -1,0 +1,5 @@
+case Inc 0 1 -> (PrintTape Halt)
+case Inc 1 0 -> Inc
+
+start case Inc
+start tape { 1 1 0 1 }
