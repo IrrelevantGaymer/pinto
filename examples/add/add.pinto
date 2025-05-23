@@ -5,5 +5,4 @@ for n in Sexpr Decimal case Add (Neg n) (Neg n) -> (OpReset (Inc (Move <- (Dec A
 
 for dir a in Arrow * All case (Move dir a) _ _ dir a
 
-start case AddStart
-start tape { (Pos ((4 2) 0)) (Neg (6 9)) }
+start tape with AddStart = [ (Pos ((4 2) 0)) (Neg (6 9)) ]
