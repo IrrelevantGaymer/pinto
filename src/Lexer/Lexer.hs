@@ -96,7 +96,7 @@ lexChar char = Lexer f
           f []     = Nothing
 
 specialChars :: [Char]
-specialChars = "(){}"
+specialChars = "(){}[]="
 
 ws :: Lexer (Atom String)
 ws = lexSpan isSpace
@@ -112,6 +112,12 @@ tknKwrdCase = (Keyword Case <$) <$> lexStr "case"
 
 tknKwrdLet :: Lexer (Atom Tkn)
 tknKwrdLet = (Keyword Let <$) <$> lexStr "let"
+
+tknKwrdStart :: Lexer (Atom Tkn)
+tknKwrdStart = (Keyword Start <$) <$> lexStr "start"
+
+tknKwrdWith :: Lexer (Atom Tkn)
+tknKwrdWith = (Keyword With <$) <$> lexStr "with"
 
 tknArrow :: Lexer (Atom Tkn)
 tknArrow = tknLeftArrow <|> tknRightArrow
@@ -137,6 +143,15 @@ tknOpenBrace = (OpenBrace <$) <$> lexChar '{'
 tknCloseBrace :: Lexer (Atom Tkn)
 tknCloseBrace = (CloseBrace <$) <$> lexChar '}'
 
+tknOpenBracket :: Lexer (Atom Tkn)
+tknOpenBracket = (OpenBracket <$) <$> lexChar '['
+
+tknCloseBracket :: Lexer (Atom Tkn)
+tknCloseBracket = (CloseBracket <$) <$> lexChar ']'
+
+tknAssign :: Lexer (Atom Tkn)
+tknAssign = (Assign <$) <$> lexChar '='
+
 tknWord :: Lexer (Atom Tkn)
 tknWord = fmap (Word <$>) (lexSpan $ (&&) <$>
         (not <$> isSpace) <*>
@@ -144,9 +159,10 @@ tknWord = fmap (Word <$>) (lexSpan $ (&&) <$>
     )
 
 lexTkn :: Lexer (Atom Tkn)
-lexTkn = tknKwrdFor   <|> tknKwrdIn     <|> tknKwrdCase  <|> tknKwrdLet    <|>
-         tknOpenParen <|> tknCloseParen <|> tknOpenBrace <|> tknCloseBrace <|>
-         tknArrow     <|> tknString     <|> tknWord
+lexTkn = tknKwrdFor     <|> tknKwrdIn       <|> tknKwrdCase    <|> tknKwrdLet      <|>
+         tknKwrdStart   <|> tknKwrdWith     <|> tknOpenParen   <|> tknCloseParen   <|> 
+         tknOpenBrace   <|> tknCloseBrace   <|> tknOpenBracket <|> tknCloseBracket <|> 
+         tknAssign      <|> tknArrow        <|> tknString      <|> tknWord
 
 lex :: [Atom Char] -> [Atom Tkn] -> Maybe [Atom Tkn]
 lex [] tkns = Just tkns
