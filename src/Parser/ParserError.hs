@@ -1,8 +1,7 @@
 module ParserError where
 
-import Lexer
-import Tokens
-
+import Lexer ( Atom )
+import Tokens ( Tkn )
 data ParserError = 
     UnexpectedToken { 
         expectedTkn :: Tkn, 

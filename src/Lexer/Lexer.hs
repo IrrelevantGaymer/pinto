@@ -1,7 +1,7 @@
 module Lexer where
 
-import Control.Applicative
-import Data.Char
+import Control.Applicative ( Alternative((<|>), empty) )
+import Data.Char ( isSpace )
 
 import Tokens
 

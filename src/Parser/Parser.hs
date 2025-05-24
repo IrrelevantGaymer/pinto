@@ -1,9 +1,14 @@
 module Parser where
 
-import Tokens
-import Lexer
+import Control.Applicative
+    ( Alternative(empty), Alternative(many) )
 
-import ParserError
+import Tokens ( Tkn, Token(CloseParen, Word, OpenParen, Arrow, Keyword), Arrow (..), Keyword (Case) )
+import Lexer ( Atom(Atom, atomValue) )
+
+import ParserError ( ParserError(ExpectedWord, UnexpectedToken, Empty) )
+import AST ( Pattern(Value, Tuple), Dir, Direction(..), Rule (Rule) )
+import GHC.Base (Alternative((<|>)))
 
 newtype Parser a = Parser {
     runParser :: [Atom Tkn] -> Either ParserError ([Atom Tkn], a)

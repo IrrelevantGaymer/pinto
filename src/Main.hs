@@ -2,8 +2,8 @@ module Main where
 
 import System.Environment
 
-import Lexer
-import Tokens
+import Lexer ( atomize, lex, FileName, Atom )
+import Tokens ( Tkn )
 
 main :: IO()
 main = do
