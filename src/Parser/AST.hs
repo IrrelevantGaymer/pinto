@@ -52,9 +52,11 @@ type Pat = Pattern
 data Pattern = Value String | Tuple [Pattern] deriving(Show)
 
 data Rule = Rule {
-    rulePattern :: Pat,
+    ruleCurrentState :: Pat,
     ruleFromValue :: Pat,
     ruleToValue :: Pat,
+    ruleDir :: Dir,
+    ruleNextState :: Pat
 } deriving(Show)
 
 data Tape = Tape {
@@ -65,6 +67,8 @@ data Tape = Tape {
 data Map = Map {
     mapName :: String,
     mapFromSet :: SetDef,
+    mapToSet :: SetDef,
+    mapMappings :: [Mapping]
 } deriving(Show)
 
 data Mapping = Mapping {
