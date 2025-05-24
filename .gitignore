@@ -1,3 +1,4 @@
 build/
 pinto
 hie.yaml
+test_ghci
