@@ -55,21 +55,19 @@ data Rule = Rule {
     rulePattern :: Pat,
     ruleFromValue :: Pat,
     ruleToValue :: Pat,
-    ruleDir :: Dir
-}
+} deriving(Show)
 
 data Tape = Tape {
     tapeValues :: [Pat],
     tapeIndex :: Int
-}
+} deriving(Show)
 
 data Map = Map {
     mapName :: String,
     mapFromSet :: SetDef,
-    mapToSet :: SetDef
-}
+} deriving(Show)
 
 data Mapping = Mapping {
     mappingFromPattern :: Pat,
     mappingToPattern :: Pat
-}
+} deriving(Show)
