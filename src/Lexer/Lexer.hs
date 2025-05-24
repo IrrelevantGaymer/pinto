@@ -34,8 +34,8 @@ instance Applicative Atom where
 
 instance Show a => Show (Atom a) where
     show (Atom a fileName (row, col)) = show fileName ++ ":" ++
-        show row ++ ":"  ++
-        show col ++ ": " ++
+        show col ++ ":"  ++
+        show row ++ ": " ++
         show a
 
 atomize :: [FileName] -> [String] -> [Atom Char]
