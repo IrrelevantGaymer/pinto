@@ -34,8 +34,8 @@ instance Applicative Atom where
 
 instance Show a => Show (Atom a) where
     show (Atom a fileName (row, col)) = show fileName ++ ":" ++
-        show col ++ ":"  ++
-        show row ++ ": " ++
+        show row ++ ":"  ++
+        show col ++ ": " ++
         show a
 
 atomize :: [FileName] -> [String] -> [Atom Char]
@@ -155,8 +155,8 @@ lex input tkns = do
     tkns' <- Lexer.lex input' (tkns ++ [tkn])
     if null input' then do
         let
-            (Atom _ fileName (_, col)) = tkn
-            eof = Atom EndOfFile fileName (1, col + 1)
+            (Atom _ fileName (row, _)) = tkn
+            eof = Atom EndOfFile fileName (row + 1, 1)
         return $ tkns' ++ [eof]
     else do
         return tkns'
