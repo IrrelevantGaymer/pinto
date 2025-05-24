@@ -14,4 +14,9 @@ data ParserError =
     UnexpectedToken { 
         expectedTkn :: Tkn, 
         received :: Atom Tkn 
-    } deriving (Show)
+    } |
+    ExpectedWord {
+        received :: Atom Tkn  
+    } |
+    Empty deriving (Show)
+    
