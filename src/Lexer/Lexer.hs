@@ -29,25 +29,26 @@ instance Applicative Atom where
      - since x could originate from somewhere
      - not at the beginning of [Atom Char]
      -}
-    pure x = (Atom x "" (0, 0))
-    (Atom f fileName pos) <*> (Atom x _ _) = (Atom (f x) fileName pos) 
+    pure x = Atom x "" (0, 0)
+    (Atom f fileName pos) <*> (Atom x _ _) = Atom (f x) fileName pos
 
 instance Show a => Show (Atom a) where
-    show (Atom a fileName (row, col)) = show fileName ++ ":" ++ 
-        show row ++ ":"  ++ 
+    show (Atom a fileName (row, col)) = show fileName ++ ":" ++
+        show row ++ ":"  ++
         show col ++ ": " ++
         show a
 
 atomize :: [FileName] -> [String] -> [Atom Char]
-atomize filePaths srcs = concat $ map 
-    (uncurry (flip atomizeRec (1, 1))) 
+atomize filePaths srcs = concatMap
+    (uncurry (`atomizeRec` (1, 1)))
     (zip filePaths srcs)
 
 -- internal function for providing positions to each atom
 atomizeRec :: FileName -> (Row, Col) -> String -> [Atom Char]
-atomizeRec fileName (row, col) (x:xs) 
-    | x == '\n' = atomizeRec fileName (row + 1, 1) xs
-    | otherwise = (Atom x fileName (row, col)) : 
+atomizeRec fileName (row, col) (x:xs)
+    | x == '\n' = Atom x fileName (row, col) :
+                  atomizeRec fileName (row + 1, 1) xs
+    | otherwise = Atom x fileName (row, col) :
                   atomizeRec fileName (row, col + 1) xs
 atomizeRec _ _ [] = []
 
@@ -58,12 +59,12 @@ atomizeRec _ _ [] = []
  - We might still have to make Atom an Applicative,
  - so we can do monadic operations on it later???
  -}
-data Lexer a = Lexer {
+newtype Lexer a = Lexer {
     runLexer :: [Atom Char] -> Maybe ([Atom Char], a)
 }
 
 instance Functor Lexer where
-    fmap f (Lexer x) = Lexer $ \input -> do 
+    fmap f (Lexer x) = Lexer $ \input -> do
         (input', y) <- x input
         return (input', f y)
 
@@ -75,7 +76,7 @@ instance Applicative Lexer where
         return (input'', f a)
 
 instance Alternative Lexer where
-    empty = Lexer $ \_ -> Nothing
+    empty = Lexer $ const Nothing
     (Lexer x) <|> (Lexer y) = Lexer $ \input -> x input <|> y input
 
 lexSpan :: (Char -> Bool) -> Lexer (Atom String)
@@ -84,13 +85,13 @@ lexSpan p = Lexer $ \input ->
         in Just (rest, sequenceA tkn)
 
 lexStr :: String -> Lexer (Atom String)
-lexStr = fmap sequenceA . sequenceA . map lexChar
+lexStr = fmap sequenceA . traverse lexChar
 
 lexChar :: Char -> Lexer (Atom Char)
-lexChar char = Lexer f 
-    where f (x:xs) = if char == atomValue x then 
-                        Just (xs, x) 
-                     else 
+lexChar char = Lexer f
+    where f (x:xs) = if char == atomValue x then
+                        Just (xs, x)
+                     else
                         Nothing
           f []     = Nothing
 
@@ -101,45 +102,45 @@ ws :: Lexer (Atom String)
 ws = lexSpan isSpace
 
 tknKwrdFor :: Lexer (Atom Tkn)
-tknKwrdFor = ((Keyword For) <$) <$> (lexStr "for")
+tknKwrdFor = (Keyword For <$) <$> lexStr "for"
 
 tknKwrdIn :: Lexer (Atom Tkn)
-tknKwrdIn = ((Keyword In) <$) <$> (lexStr "in")
+tknKwrdIn = (Keyword In <$) <$> lexStr "in"
 
 tknKwrdCase :: Lexer (Atom Tkn)
-tknKwrdCase = ((Keyword Case) <$) <$> (lexStr "case")
+tknKwrdCase = (Keyword Case <$) <$> lexStr "case"
 
 tknKwrdLet :: Lexer (Atom Tkn)
-tknKwrdLet = ((Keyword Let) <$) <$> (lexStr "let")
+tknKwrdLet = (Keyword Let <$) <$> lexStr "let"
 
 tknArrow :: Lexer (Atom Tkn)
 tknArrow = tknLeftArrow <|> tknRightArrow
     where
-        tknLeftArrow = (Arrow L <$) <$> (lexStr "<-")
-        tknRightArrow = (Arrow R <$) <$> (lexStr "->")
+        tknLeftArrow = (Arrow L <$) <$> lexStr "<-"
+        tknRightArrow = (Arrow R <$) <$> lexStr "->"
 
 tknString :: Lexer (Atom Tkn)
-tknString = fmap (StringLiteral <$>) 
-    (lexChar '\"' *> 
-        (lexSpan $ not <$> (== '\"')) 
+tknString = fmap (StringLiteral <$>)
+    (lexChar '\"' *>
+        lexSpan (not <$> (== '\"'))
     <* lexChar '\"')
 
 tknOpenParen :: Lexer (Atom Tkn)
-tknOpenParen = (OpenParen <$) <$> (lexChar '(')
+tknOpenParen = (OpenParen <$) <$> lexChar '('
 
 tknCloseParen :: Lexer (Atom Tkn)
-tknCloseParen = (CloseParen <$) <$> (lexChar ')')
+tknCloseParen = (CloseParen <$) <$> lexChar ')'
 
 tknOpenBrace :: Lexer (Atom Tkn)
-tknOpenBrace = (OpenBrace <$) <$> (lexChar '{')
+tknOpenBrace = (OpenBrace <$) <$> lexChar '{'
 
 tknCloseBrace :: Lexer (Atom Tkn)
-tknCloseBrace = (CloseBrace <$) <$> (lexChar '}')
+tknCloseBrace = (CloseBrace <$) <$> lexChar '}'
 
 tknWord :: Lexer (Atom Tkn)
-tknWord = fmap (Word <$>) (lexSpan $ (&&) <$> 
-        (not <$> isSpace) <*> 
-        (not <$> flip elem specialChars) 
+tknWord = fmap (Word <$>) (lexSpan $ (&&) <$>
+        (not <$> isSpace) <*>
+        (not <$> flip elem specialChars)
     )
 
 lexTkn :: Lexer (Atom Tkn)
@@ -149,7 +150,13 @@ lexTkn = tknKwrdFor   <|> tknKwrdIn     <|> tknKwrdCase  <|> tknKwrdLet    <|>
 
 lex :: [Atom Char] -> [Atom Tkn] -> Maybe [Atom Tkn]
 lex [] tkns = Just tkns
-lex input tkns = do 
+lex input tkns = do
     (input', tkn) <- runLexer (ws *> lexTkn <* ws) input
     tkns' <- Lexer.lex input' (tkns ++ [tkn])
-    return tkns'
+    if null input' then do
+        let
+            (Atom _ fileName (_, col)) = tkn
+            eof = Atom EndOfFile fileName (1, col + 1)
+        return $ tkns' ++ [eof]
+    else do
+        return tkns'

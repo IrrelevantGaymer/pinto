@@ -1,5 +1,5 @@
 echo "building src"
-./src/lexer/_build.sh
-./src/parser/_build.sh
+./src/Lexer/_build.sh
+./src/Parser/_build.sh
 
-ghc-9.10.2 -Wall -fforce-recomp -c -O -odir ./build -hidir ./build src/main.hs
+ghc-9.10.2 -Wall -fforce-recomp -c -O -odir ./build -hidir ./build src/Main.hs

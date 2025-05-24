@@ -1,4 +1,4 @@
-module Main where 
+module Main where
 
 import System.Environment
 
@@ -9,7 +9,7 @@ main :: IO()
 main = do
     args <- getArgs
     handleArgs args
-    
+
 
 handleArgs :: [String] -> IO ()
 handleArgs (cmd:rest) = (\args -> case cmd of
@@ -26,13 +26,12 @@ handleArgs [] = putStrLn "Expected command.  Try help"
 tokenize :: [FileName] -> IO [Atom Tkn]
 tokenize filePaths = do
     srcs <- sequenceA $ readFile <$> filePaths
-    tkns <- (\paths -> case Lexer.lex (atomize paths srcs) [] of
+    (\paths -> case Lexer.lex (atomize paths srcs) [] of
         Just tkns -> return tkns
         Nothing -> ioError $ userError "Could Not Tokenize Files") filePaths
-    return tkns
 
 debugPrintTokens :: [Atom Tkn] -> IO()
 debugPrintTokens (tkn:tkns) = do
-    _ <- putStrLn $ show tkn
+    _ <- print tkn
     debugPrintTokens tkns
 debugPrintTokens [] = putStrLn ""

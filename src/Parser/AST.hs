@@ -1,11 +1,16 @@
 module AST where
 
+data AST = AST {
+    astStartingTapes :: [Tape],
+    astRules :: [Rule]
+}
+
 type UnOp = UnarySetOperation
 data UnarySetOperation = PowerSet deriving(Show)
 type BinOp = BinarySetOperation
 data BinarySetOperation = Concat | Difference | CartesianProduct deriving(Show)
 
-data SetDef = Set [String] | 
+data SetDef = Set [Pat] | 
     UnOp UnOp SetDef |
     BinOpSet BinOp SetDef SetDef deriving(Show) 
 
@@ -51,4 +56,20 @@ data Rule = Rule {
     ruleFromValue :: Pat,
     ruleToValue :: Pat,
     ruleDir :: Dir
+}
+
+data Tape = Tape {
+    tapeValues :: [Pat],
+    tapeIndex :: Int
+}
+
+data Map = Map {
+    mapName :: String,
+    mapFromSet :: SetDef,
+    mapToSet :: SetDef
+}
+
+data Mapping = Mapping {
+    mappingFromPattern :: Pat,
+    mappingToPattern :: Pat
 }
