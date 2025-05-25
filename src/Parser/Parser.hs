@@ -3,11 +3,11 @@ module Parser where
 import Control.Applicative
     ( Alternative(empty), Alternative(many) )
 
-import Tokens ( Tkn, Token(CloseParen, Word, OpenParen, Arrow, Keyword), Arrow (..), Keyword (Case) )
+import Tokens ( Tkn, Token(CloseParen, Word, OpenParen, Arrow, Keyword, OpenBracket, CloseBracket, Assign, EndOfFile), Arrow (..), Keyword (..) )
 import Lexer ( Atom(Atom, atomValue) )
 
 import ParserError ( ParserError(ExpectedWord, UnexpectedToken, Empty) )
-import AST ( Pattern(Value, Tuple), Dir, Direction(..), Rule (Rule) )
+import AST ( Pattern(Value, Tuple), Dir, Direction(..), Rule (Rule), Tape (..), Node (..), AST (..) )
 import GHC.Base (Alternative((<|>)))
 
 newtype Parser a = Parser {
@@ -34,11 +34,11 @@ instance Alternative Parser where
             f (Right a) _         = Right a
             f _         (Right a) = Right a
 
-parseTkns :: [Tkn] -> Parser (Atom [Tkn])
-parseTkns = fmap sequenceA . traverse parseTkn
+nodeTkns :: [Tkn] -> Parser (Atom [Tkn])
+nodeTkns = fmap sequenceA . traverse nodeTkn
 
-parseTkn :: Tkn -> Parser (Atom Tkn)
-parseTkn tkn = Parser f
+nodeTkn :: Tkn -> Parser (Atom Tkn)
+nodeTkn tkn = Parser f
     where f (x:xs) = if tkn == atomValue x then
                         Right (xs, x)
                      else
@@ -46,37 +46,75 @@ parseTkn tkn = Parser f
           -- TODO: encode this unreachableness in the type system
           f [] = error "Unreachable: list of tokens should always end with EndOfFile"
 
-parseDir :: Parser (Atom Dir)
-parseDir = leftDir <|> rightDir
+nodeDir :: Parser (Atom Dir)
+nodeDir = leftDir <|> rightDir
     where
-        leftDir = (AST.L <$) <$> parseTkn (Arrow Tokens.L)
-        rightDir = (AST.R <$) <$> parseTkn (Arrow Tokens.R)
+        leftDir  = (AST.L <$) <$> nodeTkn (Arrow Tokens.L)
+        rightDir = (AST.R <$) <$> nodeTkn (Arrow Tokens.R)
 
-parseWord :: Parser (Atom String)
-parseWord = Parser f
+nodeWord :: Parser (Atom String)
+nodeWord = Parser f
     where f (x:xs) = case x of
             Atom (Word value) fileName pos -> Right (xs, Atom value fileName pos)
             _ -> Left (ExpectedWord x)
           f [] = error "Unreachable: list of tokens should always end with EndOfFile"
 
-parseBasicRule :: Parser (Atom Rule)
-parseBasicRule = parseTkn (Keyword Case) *> (fmap Rule <$> parsePattern 
-    <**> parsePattern 
-    <**> parsePattern 
-    <**> parseDir 
-    <**> parsePattern)
+nodeTape :: Parser Node
+nodeTape = fmap (atomValue . (TapeNode <$>)) (fmap ($ 0) <$> (fmap Tape
+    <$>  (nodeTkn (Keyword Start) *> nodeWord)
+    <**> (nodeTkn (Keyword With)  *> nodePattern)
+    <**> (nodeTkn Assign          *> nodePatternList)))
     where
         infixl 4 <**>
-        (<**>) :: (Applicative f1, Applicative f2) => f1 (f2 (a -> b)) -> f1 (f2 a) -> f1 (f2 b)
+        (<**>) :: (Applicative f1, Applicative f2) =>
+            f1 (f2 (a -> b)) -> f1 (f2 a) -> f1 (f2 b)
         a <**> b = (<*>) <$> a <*> b
 
 
-parsePattern :: Parser (Atom Pattern)
-parsePattern = parsePatternValue <|> parsePatternTuple
+nodeBasicRule :: Parser Node
+nodeBasicRule = fmap (atomValue . (RuleNode <$>)) (fmap Rule
+    <$>  (nodeTkn (Keyword Case) *>  nodePattern)
+    <**> nodePattern
+    <**> nodePattern
+    <**> nodeDir
+    <**> nodePattern)
+    where
+        infixl 4 <**>
+        (<**>) :: (Applicative f1, Applicative f2) =>
+            f1 (f2 (a -> b)) -> f1 (f2 a) -> f1 (f2 b)
+        a <**> b = (<*>) <$> a <*> b
 
-parsePatternValue :: Parser (Atom Pattern)
-parsePatternValue = fmap Value <$> parseWord
 
-parsePatternTuple :: Parser (Atom Pattern)
-parsePatternTuple = fmap Tuple <$> fmap sequenceA
-    (parseTkn OpenParen *> many parsePattern <* parseTkn CloseParen)
+nodePattern :: Parser (Atom Pattern)
+nodePattern = nodePatternValue <|> nodePatternList <|> nodePatternTuple
+
+nodePatternValue :: Parser (Atom Pattern)
+nodePatternValue = fmap Value <$> nodeWord
+
+nodePatternList :: Parser (Atom Pattern)
+nodePatternList = fmap Tuple <$> fmap sequenceA
+    (nodeTkn OpenBracket *> many nodePattern <* nodeTkn CloseBracket)
+
+nodePatternTuple :: Parser (Atom Pattern)
+nodePatternTuple = fmap Tuple <$> fmap sequenceA
+    (nodeTkn OpenParen *> many nodePattern <* nodeTkn CloseParen)
+
+parseNode :: Parser Node
+parseNode = nodeTape <|> nodeBasicRule
+
+parse :: [Atom Tkn] -> AST -> Either ParserError AST
+parse [Atom EndOfFile _ _] ast = Right ast
+parse input (AST tapes rules) = do
+    (input', node) <- runParser parseNode input
+    {- 
+     - I *REALLY* love Haskell, but it took me 15 minutes to realize 
+     - that TapeNode and RuleNode had to be indented twice.  This is why
+     - whitespace dependent languages are annoying.  If Haskell was
+     - not whitespace dependent, *chef's kiss* magnifico.
+     - Next Project Idea Maybe??
+     -}
+    let ast' = case node of
+            TapeNode tape -> AST (tape : tapes) rules
+            RuleNode rule -> AST tapes (rule : rules)
+    parse input' ast'
+

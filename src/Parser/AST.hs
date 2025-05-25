@@ -3,7 +3,9 @@ module AST where
 data AST = AST {
     astStartingTapes :: [Tape],
     astRules :: [Rule]
-}
+} deriving(Show)
+
+data Node = RuleNode Rule | TapeNode Tape
 
 type UnOp = UnarySetOperation
 data UnarySetOperation = PowerSet deriving(Show)
@@ -49,7 +51,7 @@ type Dir = Direction
 data Direction = L | R deriving(Show)
 
 type Pat = Pattern
-data Pattern = Value String | Tuple [Pattern] deriving(Show)
+data Pattern = Value String | List [Pattern] | Tuple [Pattern] deriving(Show)
 
 data Rule = Rule {
     ruleCurrentState :: Pat,
@@ -60,7 +62,9 @@ data Rule = Rule {
 } deriving(Show)
 
 data Tape = Tape {
-    tapeValues :: [Pat],
+    tapeName :: String,
+    tapeStartState :: Pat,
+    tapeValues :: Pat, -- TODO: Create Data Structure for storing the Tape Values
     tapeIndex :: Int
 } deriving(Show)
 
