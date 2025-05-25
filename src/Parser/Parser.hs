@@ -7,7 +7,7 @@ import Tokens ( Tkn, Token(CloseParen, Word, OpenParen, Arrow, Keyword, OpenBrac
 import Lexer ( Atom(Atom, atomValue) )
 
 import ParserError ( ParserError(ExpectedWord, UnexpectedToken, Empty) )
-import AST ( Pattern(Value, Tuple), Dir, Direction(..), Rule (Rule), Tape (..), Node (..), AST (..) )
+import AST ( Pattern(..), Dir, Direction(..), Rule (Rule), Tape (..), Node (..), AST (..) )
 import GHC.Base (Alternative((<|>)))
 
 newtype Parser a = Parser {
@@ -62,8 +62,8 @@ nodeWord = Parser f
 nodeTape :: Parser Node
 nodeTape = fmap (atomValue . (TapeNode <$>)) (fmap ($ 0) <$> (fmap Tape
     <$>  (nodeTkn (Keyword Start) *> nodeWord)
-    <**> (nodeTkn (Keyword With)  *> nodePattern)
-    <**> (nodeTkn Assign          *> nodePatternList)))
+    <**> (nodeTkn (Keyword With)  *> nodePattern <* nodeTkn Assign)
+    <**> nodePatternList))
     where
         infixl 4 <**>
         (<**>) :: (Applicative f1, Applicative f2) =>
@@ -86,13 +86,13 @@ nodeBasicRule = fmap (atomValue . (RuleNode <$>)) (fmap Rule
 
 
 nodePattern :: Parser (Atom Pattern)
-nodePattern = nodePatternValue <|> nodePatternList <|> nodePatternTuple
+nodePattern = nodePatternValue <|> fmap List <$> nodePatternList <|> nodePatternTuple
 
 nodePatternValue :: Parser (Atom Pattern)
 nodePatternValue = fmap Value <$> nodeWord
 
-nodePatternList :: Parser (Atom Pattern)
-nodePatternList = fmap Tuple <$> fmap sequenceA
+nodePatternList :: Parser (Atom [Pattern])
+nodePatternList = fmap sequenceA
     (nodeTkn OpenBracket *> many nodePattern <* nodeTkn CloseBracket)
 
 nodePatternTuple :: Parser (Atom Pattern)
