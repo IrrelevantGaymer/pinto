@@ -1,6 +1,6 @@
 module Main where
 
-import System.Environment
+import System.Environment ( getArgs )
 
 import Lexer ( atomize, lex, FileName, Atom )
 import Tokens ( Tkn )
