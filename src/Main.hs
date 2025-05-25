@@ -4,6 +4,9 @@ import System.Environment ( getArgs )
 
 import Lexer ( atomize, lex, FileName, Atom )
 import Tokens ( Tkn )
+import Parser (parse)
+import Interpreter (InterpreterSettings (..), interpretAST)
+import AST (AST(..))
 
 main :: IO()
 main = do
@@ -16,8 +19,18 @@ handleArgs (cmd:rest) = (\args -> case cmd of
     "lex" -> do
         tkns <- tokenize args
         debugPrintTokens tkns
-    "parse" -> putStrLn "Parsing is not supported yet"
-    "interpret" -> putStrLn "Interpreting is not supported yet"
+    "parse" -> do
+        tkns <- tokenize args
+        ast <- case parse tkns $ AST [] [] of
+            Right ast -> return ast
+            Left err -> ioError $ userError $ show err
+        print ast
+    "interpret" -> do
+        tkns <- tokenize args
+        ast <- case parse tkns $ AST [] [] of
+            Right ast -> return ast
+            Left err -> ioError $ userError $ show err
+        interpretAST (InterpreterSettings True) ast
     "help" -> putStrLn "TODO: provide help function"
     (_:_) -> putStrLn $ cmd ++ " is not a valid command"
     [] -> putStrLn "unreachable") rest
