@@ -11,18 +11,18 @@ module Parser where {
 
     import ParserError ( ParserError(..) );
     import AST (
-        Pattern(..),
-        Dir,
-        Direction(..),
-        Rule (..),
-        Tape (..),
         Node (..),
         AST (..)
     );
     import GHC.Base (Alternative((<|>)));
     import Data.Functor.Compose (Compose(..));
     import Data.Functor ((<&>));
-
+    import Direction (Dir);
+    import qualified Direction as Dir;
+    import Pattern (Pat, Pattern (..));;
+    import Rule (Rule(..));
+    import Tape (Tape(..));
+    
     newtype Parser a = Parser {
         runParser :: [Atom Tkn] -> Either ParserError ([Atom Tkn], a)
     };
@@ -68,8 +68,8 @@ module Parser where {
     nodeDir :: Parser (Atom Dir);
     nodeDir = leftDir <|> rightDir where {
         arrowToDir arrow dir = getCompose $ dir <$ Compose (nodeTkn $ Arrow arrow);
-        leftDir  = arrowToDir Tokens.L AST.L;
-        rightDir = arrowToDir Tokens.R AST.R;
+        leftDir  = arrowToDir Tokens.L Dir.L;
+        rightDir = arrowToDir Tokens.R Dir.R;
     };
 
     nodeWord :: Parser (Atom String);
@@ -83,38 +83,38 @@ module Parser where {
     nodeTape :: Parser Node;
     nodeTape = atomValue <$> getCompose (Tape
         <$> Compose (nodeTkn (Keyword Start) *> nodeWord)
-        <*> Compose (nodeTkn (Keyword With) *> nodePattern <* nodeTkn Assign)
-        <*> Compose nodePatternList
+        <*> Compose (nodeTkn (Keyword With) *> nodePat <* nodeTkn Assign)
+        <*> Compose nodePatList
         <&> ($ 0)
         <&> TapeNode
     );
 
     nodeBasicRule :: Parser Node;
     nodeBasicRule = atomValue <$> getCompose (Rule
-        <$> Compose (nodeTkn (Keyword Case) *> nodePattern)
-        <*> Compose nodePattern
-        <*> Compose nodePattern
+        <$> Compose (nodeTkn (Keyword Case) *> nodePat)
+        <*> Compose nodePat
+        <*> Compose nodePat
         <*> Compose nodeDir
-        <*> Compose nodePattern
+        <*> Compose nodePat
         <&> RuleNode
     );
 
-    nodePattern :: Parser (Atom Pattern);
-    nodePattern = nodePatternValue <|>
-        fmap List <$> nodePatternList <|>
-        nodePatternTuple;
+    nodePat :: Parser (Atom Pat);
+    nodePat = nodePatValue <|>
+        fmap List <$> nodePatList <|>
+        nodePatTuple;
 
-    nodePatternValue :: Parser (Atom Pattern);
-    nodePatternValue = getCompose $ Value <$> Compose nodeWord;
+    nodePatValue :: Parser (Atom Pat);
+    nodePatValue = getCompose $ Value <$> Compose nodeWord;
 
-    nodePatternList :: Parser (Atom [Pattern]);
-    nodePatternList = sequenceA <$> listPattern where {
-        listPattern = nodeTkn OpenBracket *> many nodePattern <* nodeTkn CloseBracket;
+    nodePatList :: Parser (Atom [Pat]);
+    nodePatList = sequenceA <$> listPat where {
+        listPat = nodeTkn OpenBracket *> many nodePat <* nodeTkn CloseBracket;
     };
 
-    nodePatternTuple :: Parser (Atom Pattern);
-    nodePatternTuple = getCompose $ Tuple <$> Compose (sequenceA <$> tuplePattern) where {
-        tuplePattern = nodeTkn OpenParen *> many nodePattern <* nodeTkn CloseParen
+    nodePatTuple :: Parser (Atom Pat);
+    nodePatTuple = getCompose $ Tuple <$> Compose (sequenceA <$> tuplePat) where {
+        tuplePat = nodeTkn OpenParen *> many nodePat <* nodeTkn CloseParen
     };
 
     parseNode :: Parser Node;

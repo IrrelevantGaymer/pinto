@@ -1,9 +1,13 @@
 module Interpreter where {
-    import AST (Tape (..), Pat, Rule (..), Direction (..), AST (..));
+    import AST (AST (..));
     import Text.Printf (printf);
     import Control.Monad (when);
     import Data.List (find);
-
+    import Rule (Rule (..));
+    import Pattern (Pat);
+    import Tape (Tape(..));
+    import qualified Direction as Dir;
+    
     newtype InterpreterSettings = InterpreterSettings {
         interpreterSettingsDebug :: Bool
     };
@@ -65,8 +69,8 @@ module Interpreter where {
         (Rule _ _ rToValue rDir rNextState) = rule;
         newTValues = take tIdx tValues ++ rToValue : drop (tIdx + 1) tValues;
         newTIdx = case rDir of {
-            L -> tIdx - 1;
-            R -> tIdx + 1;
+            Dir.L -> tIdx - 1;
+            Dir.R -> tIdx + 1;
         };
     };
 
