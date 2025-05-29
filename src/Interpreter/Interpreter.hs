@@ -3,7 +3,7 @@ module Interpreter where {
     import Text.Printf (printf);
     import Control.Monad (when);
     import Data.List (find);
-    import Rule (Rule (..), canApplyRule, applyRule);
+    import Rule (Rule (..), applyRule, canApplyRule);
     import Pattern (Pat);
     import Tape (Tape(..));
     
