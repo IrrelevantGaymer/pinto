@@ -214,12 +214,12 @@ module Parser where {
     parse input ast = do {
         (input', node) <- runParser parseNode input;
         let {
-            node_ast = case node of {
-                SetNode  set  -> mempty {astSets =  [set] };
-                TapeNode tape -> mempty {astTapes = [tape]};
-                RuleNode rule -> mempty {astRules = [rule]};
+            (AST sets tapes rules) = ast;
+            ast' = case node of {
+                SetNode  set  -> ast {astSets =  set:sets };
+                TapeNode tape -> ast {astTapes = tape:tapes };
+                RuleNode rule -> ast {astRules = rule:rules };
             };
-            ast' = ast <> node_ast;
         };
         parse input' ast';
     };
