@@ -53,6 +53,13 @@ module Parser where {
         };
     };
 
+    instance Monad Parser where {
+        (Parser x) >>= f = Parser $ \input -> do {
+            (rest, y) <- x input;
+            runParser (f $! y) $! rest
+        };
+    };
+
     nodeTkns :: [Tkn] -> Parser (Atom [Tkn]);
     nodeTkns = getCompose $ sequenceA <$> Compose (traverse nodeTkn);
 
