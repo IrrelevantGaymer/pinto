@@ -1,7 +1,9 @@
 module Rule where {
     import Direction ( Dir );
-    import Pattern ( Pat );
-
+    import Pattern ( Pat, Pattern (..) );
+    import Tape (Tape (..));
+    import qualified Direction as Dir;
+    
     data Rule = Rule {
         ruleCurrentState :: Pat,
         ruleFromValue :: Pat,
