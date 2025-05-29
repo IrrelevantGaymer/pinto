@@ -84,38 +84,50 @@ module Parser where {
     nodeWord :: Parser (Atom String);
     nodeWord = Parser f where {
         f (x:xs)
-            | Atom (Word value) fileName pos <- x = Right (xs, Atom value fileName pos)
-            | otherwise                           = Left (ExpectedWord x);
+            | Atom (Tokens.Word value) fileName pos <- x = Right (xs, Atom value fileName pos)
+            | otherwise                                  = Left (ExpectedWord x);
         f [] = error "Unreachable: list of tokens should always end with EndOfFile";
     };
 
     nodeTape :: Parser Node;
-    nodeTape = atomValue <$> getCompose (
-        Tape
-        <$> Compose (nodeTkn (Keyword Start) *> nodeWord)
-        <*> Compose (nodeTkn (Keyword With) *> nodePat <* nodeTkn Assign)
-        <*> Compose nodePatList
-        <&> ($ 0)
-        <&> TapeNode
-    );
+    nodeBasicRuleNode :: Parser Node;
+    nodeBasicRuleNode = RuleNode . SimpleRule <$> nodeBasicRule;
 
-    nodeBasicRule :: Parser Node;
-    nodeBasicRule = atomValue <$> getCompose (
-        Rule
-        <$> Compose (nodeTkn (Keyword Case) *> nodePat)
-        <*> Compose nodePat
-        <*> Compose nodePat
-        <*> Compose nodeDir
-        <*> Compose nodePat
-        <&> RuleNode
-    );
+    nodeBasicRule :: Parser BasicRule;
+    nodeBasicRule = do {
+        _            <- nodeTkn $ Keyword Case;
+        currentState <- atomValue <$> nodePat;
+        fromValue    <- atomValue <$> nodePat;
+        toValue      <- atomValue <$> nodePat;
+        dir          <- atomValue <$> nodeDir;
+        nextState    <- atomValue <$> nodePat;
+        return $ BasicRule
+            currentState fromValue toValue dir nextState;
+    };
 
-    nodeSetDef :: Parser Node;
-    nodeSetDef = SetNode . atomValue <$> getCompose (
-        (,)
-        <$> Compose (nodeTkn (Keyword Let) *> nodeWord)
-        <*> Compose (nodeTkn Assign *> nodeSet)
-    );
+    nodeUQRuleNode :: Parser Node;
+    nodeUQRuleNode = RuleNode . ComplexRule <$> nodeUQRule;
+
+    nodeUQRule :: Parser UQRule;
+    nodeUQRule = do {
+        _ <- nodeTkn $ Keyword For;
+        uqPat <- atomValue <$> nodePat;
+        _ <- nodeTkn $ Keyword In;
+        uqPatSet <- atomValue <$> nodeSet;
+
+        -- TODO type check uqPat
+        uqRules <- block <|> singleton <$> single;
+        return $ UniversalQuantifierRule uqPat uqPatSet uqRules;
+    } where {
+        block = do {
+            _ <- nodeTkn OpenBrace;
+            rules <- many single;
+            _ <- nodeTkn CloseBrace;
+            return rules;
+        };
+        single = SimpleRule <$> nodeBasicRule <|> ComplexRule <$> nodeUQRule;
+        singleton a = [a];
+    };
 
     nodeSet :: Parser (Atom SetDef);
     nodeSet = do {
@@ -195,7 +207,7 @@ module Parser where {
     };
 
     parseNode :: Parser Node;
-    parseNode = nodeSetDef <|> nodeTape <|> nodeBasicRule;
+    parseNode = nodeSetNode <|> nodeTape <|> nodeBasicRuleNode <|> nodeUQRuleNode;
 
     parse :: [Atom Tkn] -> AST -> Either ParserError AST;
     parse [Atom EndOfFile _ _] ast = Right ast;

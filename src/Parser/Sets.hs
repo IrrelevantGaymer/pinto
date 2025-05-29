@@ -12,7 +12,8 @@ module Sets where {
     getPrecedence Union            = 2;
     getPrecedence Difference       = 2;
 
-    data SetDef = Set ![Pat] | 
+    data SetDef = Set ![Pat] |
+        Word String |
         UnOpSet !UnOp !SetDef |
         BinOpSet !BinOp !SetDef !SetDef |
         Id !SetDef deriving(Show);
