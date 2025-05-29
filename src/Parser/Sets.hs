@@ -4,7 +4,7 @@ module Sets where {
     type UnOp = UnarySetOperation;
     data UnarySetOperation = PowerSet deriving(Show);
     type BinOp = BinarySetOperation;
-    data BinarySetOperation = Concat | Difference | CartesianProduct deriving(Show);
+    data BinarySetOperation = Union | Difference | CartesianProduct deriving(Show);
 
     data SetDef = Set [Pat] | 
         UnOp UnOp SetDef |
