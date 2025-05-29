@@ -62,33 +62,4 @@ module Interpreter where {
         | idx < 0   = Nothing
         | otherwise = idxOffsetLen xs (idx - 1) (offset + length (show x) + 1);
     idxOffsetLen [] _ _ = Nothing;
-
-    applyRule :: Tape -> Rule -> Tape;
-    applyRule tape rule = Tape tName rNextState newTValues newTIdx where {
-        (Tape tName _ tValues tIdx) = tape;
-        (Rule _ _ rToValue rDir rNextState) = rule;
-        newTValues = take tIdx tValues ++ rToValue : drop (tIdx + 1) tValues;
-        newTIdx = case rDir of {
-            Dir.L -> tIdx - 1;
-            Dir.R -> tIdx + 1;
-        };
-    };
-
-    canApplyRule :: Tape -> Rule -> Bool;
-    canApplyRule tape rule = case tapeValueAtIdx of {
-        Just tValue -> tState == rCurrentState && tValue == rFromValue;
-        Nothing -> False;
-    } where {
-        (Tape _ tState tValues tIdx) = tape;
-        (Rule rCurrentState rFromValue _ _ _) = rule;
-        tapeValueAtIdx = tValues !? tIdx;
-
-        infixl 9 !?;
-        (!?) :: [a] -> Int -> Maybe a;
-        []     !? _     = Nothing;
-        (x:_)  !? 0     = Just x;
-        (_:xs) !? idx
-            | idx > 0   = xs !? (idx - 1)
-            | otherwise = Nothing;
-    }
 }
