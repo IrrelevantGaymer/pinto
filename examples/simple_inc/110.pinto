@@ -1,1 +1,3 @@
 let Bits = { 0 1 }
+
+for a in Bits case I a a -> (I a)
