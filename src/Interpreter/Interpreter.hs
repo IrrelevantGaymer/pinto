@@ -6,18 +6,17 @@ module Interpreter where {
     import Rule (Rule (..), canApplyRule, applyRule);
     import Pattern (Pat);
     import Tape (Tape(..));
-    import qualified Direction as Dir;
     
     newtype InterpreterSettings = InterpreterSettings {
         interpreterSettingsDebug :: Bool
     };
 
     interpretAST :: InterpreterSettings -> AST -> IO ();
-    interpretAST settings (AST (tape:tapes) rules) = do {
+    interpretAST settings (AST sets (tape:tapes) rules) = do {
         _ <- interpretTape settings tape rules;
-        interpretAST settings (AST tapes rules);
+        interpretAST settings (AST sets tapes rules);
     };
-    interpretAST _ (AST [] _) = return ();
+    interpretAST _ (AST _ [] _) = return ();
 
     interpretTape :: InterpreterSettings -> Tape -> [Rule] -> IO ();
     interpretTape settings tape rules = do {

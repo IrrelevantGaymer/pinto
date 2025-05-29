@@ -5,6 +5,7 @@ module AST where {
     import Sets (SetDef);
     
     data AST = AST {
+        astSets :: [(String, SetDef)],
         astStartingTapes :: [Tape],
         astRules :: [Rule]
     } deriving(Show);
@@ -12,7 +13,7 @@ module AST where {
     emptyAST :: AST;
     emptyAST = AST [] [] [];
 
-    data Node = RuleNode Rule | TapeNode Tape;
+    data Node = SetNode (String, SetDef) | RuleNode Rule | TapeNode Tape deriving(Show);
 
     data Map = Map {
         mapName :: String,
