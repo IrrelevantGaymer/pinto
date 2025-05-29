@@ -120,8 +120,12 @@ module Parser where {
     nodeSet :: Parser (Atom SetDef);
     nodeSet = do {
         left <- nodeAtomSet;
-        parseSetExpr left;
+        parseSetExpr left <|> return (unwrapId <$> left);
+    } where {
+        unwrapId (Id s) = unwrapId s;
+        unwrapId nonId = nonId;
     };
+
     parseSetExpr :: Atom SetDef -> Parser (Atom SetDef);
     parseSetExpr left = do {
         op <- nodeBinaryOp;
@@ -131,16 +135,18 @@ module Parser where {
         };
         parseSetExpr left' <|> return left';
     };
+
     nestByPrecedence :: SetDef -> BinOp -> SetDef -> SetDef;
     nestByPrecedence (BinOpSet op1 s1 s2) op2 (Id s3)
-        | prec2 >= prec1 = BinOpSet op2 (BinOpSet op1 s1 s2) (Id s3)
-        | otherwise = BinOpSet op1 (Id s1) (nestByPrecedence s2 op2 (Id s3)) 
+        | prec2 >= prec1 = BinOpSet op2 (BinOpSet op1 s1 s2) s3
+        | otherwise = BinOpSet op1 s1 (nestByPrecedence (Id s2) op2 (Id s3)) 
     where {
         prec1 = getPrecedence op1;
         prec2 = getPrecedence op2;
     };
-    nestByPrecedence (Id s1) op (Id s2) = BinOpSet op (Id s1) (Id s2);
-    nestByPrecedence a o b = error $ printf "%s %s %s" (show a) (show o) (show b);
+    nestByPrecedence (Id s1) op (Id s2) = BinOpSet op s1 s2;
+    nestByPrecedence a o b = error $ 
+        printf "messed up Id: %s %s %s" (show a) (show o) (show b);
 
     nodeAtomSet :: Parser (Atom SetDef);
     nodeAtomSet = getCompose $ Id <$> Compose atom where {
