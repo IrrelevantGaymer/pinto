@@ -6,7 +6,14 @@ module Sets where {
     type BinOp = BinarySetOperation;
     data BinarySetOperation = Union | Difference | CartesianProduct deriving(Show);
 
-    data SetDef = Set [Pat] | 
-        UnOp UnOp SetDef |
-        BinOpSet BinOp SetDef SetDef deriving(Show);
+    type Precedence = Int;
+    getPrecedence :: BinOp -> Precedence;
+    getPrecedence CartesianProduct = 1;
+    getPrecedence Union            = 2;
+    getPrecedence Difference       = 2;
+
+    data SetDef = Set ![Pat] | 
+        UnOpSet !UnOp !SetDef |
+        BinOpSet !BinOp !SetDef !SetDef |
+        Id !SetDef deriving(Show);
 }

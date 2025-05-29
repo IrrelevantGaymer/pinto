@@ -5,7 +5,7 @@ module Parser where {
         Tkn,
         Token(..),
         Arrow (..),
-        Keyword (..)
+        Keyword (..), BinaryOperation (..), UnaryOperation (Power)
     );
     import Lexer ( Atom(Atom, atomValue) );
 
@@ -19,9 +19,11 @@ module Parser where {
     import Data.Functor ((<&>));
     import Direction (Dir);
     import qualified Direction as Dir;
-    import Pattern (Pat, Pattern (..));;
+    import Pattern (Pat, Pattern (..));
     import Rule (Rule(..));
     import Tape (Tape(..));
+    import Sets (BinOp, UnOp, SetDef (..), BinarySetOperation (..), UnarySetOperation (..), getPrecedence);
+    import Text.Printf (printf);
     
     newtype Parser a = Parser {
         runParser :: [Atom Tkn] -> Either ParserError ([Atom Tkn], a)
@@ -88,7 +90,8 @@ module Parser where {
     };
 
     nodeTape :: Parser Node;
-    nodeTape = atomValue <$> getCompose (Tape
+    nodeTape = atomValue <$> getCompose (
+        Tape
         <$> Compose (nodeTkn (Keyword Start) *> nodeWord)
         <*> Compose (nodeTkn (Keyword With) *> nodePat <* nodeTkn Assign)
         <*> Compose nodePatList
@@ -97,7 +100,8 @@ module Parser where {
     );
 
     nodeBasicRule :: Parser Node;
-    nodeBasicRule = atomValue <$> getCompose (Rule
+    nodeBasicRule = atomValue <$> getCompose (
+        Rule
         <$> Compose (nodeTkn (Keyword Case) *> nodePat)
         <*> Compose nodePat
         <*> Compose nodePat
@@ -105,6 +109,66 @@ module Parser where {
         <*> Compose nodePat
         <&> RuleNode
     );
+
+    nodeSetDef :: Parser Node;
+    nodeSetDef = SetNode . atomValue <$> getCompose (
+        (,)
+        <$> Compose (nodeTkn (Keyword Let) *> nodeWord)
+        <*> Compose (nodeTkn Assign *> nodeSet)
+    );
+
+    nodeSet :: Parser (Atom SetDef);
+    nodeSet = do {
+        left <- nodeAtomSet;
+        parseSetExpr left;
+    };
+    parseSetExpr :: Atom SetDef -> Parser (Atom SetDef);
+    parseSetExpr left = do {
+        op <- nodeBinaryOp;
+        right <- nodeAtomSet;
+        let {
+            left' = nestByPrecedence <$> left <*> op <*> right;
+        };
+        parseSetExpr left' <|> return left';
+    };
+    nestByPrecedence :: SetDef -> BinOp -> SetDef -> SetDef;
+    nestByPrecedence (BinOpSet op1 s1 s2) op2 (Id s3)
+        | prec2 >= prec1 = BinOpSet op2 (BinOpSet op1 s1 s2) (Id s3)
+        | otherwise = BinOpSet op1 (Id s1) (nestByPrecedence s2 op2 (Id s3)) 
+    where {
+        prec1 = getPrecedence op1;
+        prec2 = getPrecedence op2;
+    };
+    nestByPrecedence (Id s1) op (Id s2) = BinOpSet op (Id s1) (Id s2);
+    nestByPrecedence a o b = error $ printf "%s %s %s" (show a) (show o) (show b);
+
+    nodeAtomSet :: Parser (Atom SetDef);
+    nodeAtomSet = getCompose $ Id <$> Compose atom where {
+        atom = nodeGroupSet <|> nodeSetWithUnary <|> nodeBasicSet;
+        nodeGroupSet = nodeTkn OpenParen *> nodeSet <* nodeTkn CloseParen;
+        nodeSetWithUnary = getCompose $ Sets.UnOpSet
+            <$> Compose nodeUnaryOp
+            <*> Compose nodeAtomSet;
+    };
+
+    nodeBasicSet :: Parser (Atom SetDef);
+    nodeBasicSet = getCompose $ Set <$> Compose (sequenceA <$> setPat) where {
+        setPat = nodeTkn OpenBrace *> many nodePat <* nodeTkn CloseBrace;
+    };
+
+    nodeBinaryOp :: Parser (Atom BinOp);
+    nodeBinaryOp = unionOp <|> differenceOp <|> cartesianProductOp where {
+        tknToBinOp tkn op = getCompose $ op <$ Compose (nodeTkn tkn);
+        unionOp = tknToBinOp (BinaryOperation Tokens.Union) Sets.Union;
+        differenceOp = tknToBinOp (BinaryOperation Tokens.Difference) Sets.Difference;
+        cartesianProductOp = tknToBinOp (BinaryOperation Tokens.CartesianProduct) Sets.CartesianProduct;
+    };
+
+    nodeUnaryOp :: Parser (Atom UnOp);
+    nodeUnaryOp = powerOp where {
+        tknToUnOp tkn op = getCompose $ op <$ Compose (nodeTkn tkn);
+        powerOp = tknToUnOp (UnaryOperation Tokens.Power) Sets.PowerSet;
+    };
 
     nodePat :: Parser (Atom Pat);
     nodePat = nodePatValue <|>
@@ -125,19 +189,20 @@ module Parser where {
     };
 
     parseNode :: Parser Node;
-    parseNode = nodeTape <|> nodeBasicRule;
+    parseNode = nodeSetDef <|> nodeTape <|> nodeBasicRule;
 
     parse :: [Atom Tkn] -> AST -> Either ParserError AST;
     parse [Atom EndOfFile _ _] ast = Right ast;
-    parse input (AST tapes rules) = do {
+    parse input (AST sets tapes rules) = do {
         (input', node) <- runParser parseNode input;
         let {
             ast' = case node of {
-                TapeNode tape -> AST (tape : tapes) rules;
-                RuleNode rule -> AST tapes (rule : rules);
+                SetNode  set  -> AST (set : sets) tapes rules;
+                TapeNode tape -> AST sets (tape : tapes) rules;
+                RuleNode rule -> AST sets tapes (rule : rules);
             };
         };
         parse input' ast';
-    }
+    };
 
 }

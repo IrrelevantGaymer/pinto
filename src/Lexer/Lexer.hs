@@ -98,7 +98,7 @@ module Lexer where {
         f []     = Nothing;
     };
     specialChars :: [Char];
-    specialChars = "(){}[]=";
+    specialChars = "(){}[]=$+-*&^";
 
     ws :: Lexer (Atom String);
     ws = lexSpan isSpace;
@@ -153,6 +153,26 @@ module Lexer where {
 
     tknAssign :: Lexer (Atom Tkn);
     tknAssign = getCompose $ Assign <$ Compose (lexChar '=');
+
+    tknBinOpUnion :: Lexer (Atom Tkn);
+    tknBinOpUnion = getCompose $ op <$ Compose (lexChar '+') where {
+        op = BinaryOperation Union;
+    };
+
+    tknBinOpDifference :: Lexer (Atom Tkn);
+    tknBinOpDifference = getCompose $ op <$ Compose (lexChar '-') where {
+        op = BinaryOperation Difference
+    };
+
+    tknBinOpCartesianProduct :: Lexer (Atom Tkn);
+    tknBinOpCartesianProduct = getCompose $ op <$ Compose (lexChar '*') where {
+        op = BinaryOperation CartesianProduct
+    };
+
+    tknUnOpPower :: Lexer (Atom Tkn);
+    tknUnOpPower = getCompose $ op <$ Compose (lexChar '$') where {
+        op = UnaryOperation Power
+    };
 
     tknWord :: Lexer (Atom Tkn);
     tknWord = getCompose $ Word <$> Compose (lexSpan isValidChar) where {
