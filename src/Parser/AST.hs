@@ -10,7 +10,7 @@ module AST where {
     } deriving(Show);
 
     emptyAST :: AST;
-    emptyAST = AST [] [];
+    emptyAST = AST [] [] [];
 
     data Node = RuleNode Rule | TapeNode Tape;
 
