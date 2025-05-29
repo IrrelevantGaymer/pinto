@@ -15,12 +15,10 @@ module Parser where {
         AST (..)
     );
     import GHC.Base (Alternative((<|>)));
-    import Data.Functor.Compose (Compose(..));
-    import Data.Functor ((<&>));
     import Direction (Dir);
     import qualified Direction as Dir;
     import Pattern (Pat, Pattern (..));
-    import Rule (Rule(..));
+    import Rule (Rule(..), BasicRule (..), UQRule, UniversalQuantifierRule (UniversalQuantifierRule));
     import Tape (Tape(..));
     import Sets (BinOp, UnOp, SetDef (..), BinarySetOperation (..), UnarySetOperation (..), getPrecedence);
     import Text.Printf (printf);
@@ -63,7 +61,10 @@ module Parser where {
     };
 
     nodeTkns :: [Tkn] -> Parser (Atom [Tkn]);
-    nodeTkns = getCompose $ sequenceA <$> Compose (traverse nodeTkn);
+    nodeTkns tkns = do {
+        parsedTkns <- traverse nodeTkn tkns;
+        return $ sequenceA parsedTkns;
+    };
 
     nodeTkn :: Tkn -> Parser (Atom Tkn);
     nodeTkn tkn = Parser f where {
@@ -76,7 +77,10 @@ module Parser where {
 
     nodeDir :: Parser (Atom Dir);
     nodeDir = leftDir <|> rightDir where {
-        arrowToDir arrow dir = getCompose $ dir <$ Compose (nodeTkn $ Arrow arrow);
+        arrowToDir arrow dir = do {
+            arrowTkn <- nodeTkn $ Arrow arrow;
+            return (dir <$ arrowTkn);
+        };
         leftDir  = arrowToDir Tokens.L Dir.L;
         rightDir = arrowToDir Tokens.R Dir.R;
     };
@@ -90,6 +94,18 @@ module Parser where {
     };
 
     nodeTape :: Parser Node;
+    nodeTape = do {
+        _          <- nodeTkn $ Keyword Start;
+        name       <- atomValue <$> nodeWord;
+        _          <- nodeTkn $ Keyword With;
+        startState <- atomValue <$> nodePat;
+        _          <- nodeTkn Assign;
+        values     <- atomValue <$> nodePatList;
+        -- TODO: Get Initial index
+        -- Will probably look like (values, index) <- ...
+        return $ TapeNode $ Tape name startState values 0;
+    };
+
     nodeBasicRuleNode :: Parser Node;
     nodeBasicRuleNode = RuleNode . SimpleRule <$> nodeBasicRule;
 
@@ -129,6 +145,15 @@ module Parser where {
         singleton a = [a];
     };
 
+    nodeSetNode :: Parser Node;
+    nodeSetNode = do {
+        _ <- nodeTkn $ Keyword Let;
+        name <- atomValue <$> nodeWord;
+        _ <- nodeTkn Assign;
+        set <- atomValue <$> nodeSet;
+        return $ SetNode (name, set);
+    };
+
     nodeSet :: Parser (Atom SetDef);
     nodeSet = do {
         left <- nodeAtomSet;
@@ -151,50 +176,79 @@ module Parser where {
     nestByPrecedence :: SetDef -> BinOp -> SetDef -> SetDef;
     nestByPrecedence (BinOpSet op1 s1 s2) op2 (Id s3)
         | prec2 >= prec1 = BinOpSet op2 (BinOpSet op1 s1 s2) s3
-        | otherwise = BinOpSet op1 s1 (nestByPrecedence (Id s2) op2 (Id s3)) 
+        | otherwise = BinOpSet op1 s1 (nestByPrecedence (Id s2) op2 (Id s3))
     where {
         prec1 = getPrecedence op1;
         prec2 = getPrecedence op2;
     };
     nestByPrecedence (Id s1) op (Id s2) = BinOpSet op s1 s2;
-    nestByPrecedence a o b = error $ 
+    nestByPrecedence a o b = error $
         printf "unreachable pattern: %s %s %s" (show a) (show o) (show b);
 
     nodeAtomSet :: Parser (Atom SetDef);
-    nodeAtomSet = getCompose $ Id <$> Compose atom where {
-        atom = nodeGroupSet <|> nodeSetWithUnary <|> nodeBasicSet;
+    nodeAtomSet = do {
+        set <- nodeGroupSet <|> nodeSetWithUnary <|> nodeBasicSet <|> nodeWordSet;
+        return $ Id <$> set;
+    } where {
+        nodeWordSet = do {
+            set <- nodeWord;
+            return $ Sets.Word <$> set;
+        };
         nodeGroupSet = nodeTkn OpenParen *> nodeSet <* nodeTkn CloseParen;
-        nodeSetWithUnary = getCompose $ Sets.UnOpSet
-            <$> Compose nodeUnaryOp
-            <*> Compose nodeAtomSet;
+        nodeSetWithUnary = do {
+            op <- nodeUnaryOp;
+            atomSet <- nodeAtomSet;
+            return $ Sets.UnOpSet <$> op <*> atomSet;
+        };
     };
 
     nodeBasicSet :: Parser (Atom SetDef);
-    nodeBasicSet = getCompose $ Set <$> Compose (sequenceA <$> setPat) where {
+    nodeBasicSet = do {
+        patterns <- sequenceA <$> setPat;
+        return $ Set <$> patterns;
+    } where {
         setPat = nodeTkn OpenBrace *> many nodePat <* nodeTkn CloseBrace;
     };
 
     nodeBinaryOp :: Parser (Atom BinOp);
     nodeBinaryOp = unionOp <|> differenceOp <|> cartesianProductOp where {
-        tknToBinOp tkn op = getCompose $ op <$ Compose (nodeTkn tkn);
-        unionOp = tknToBinOp (BinaryOperation Tokens.Union) Sets.Union;
-        differenceOp = tknToBinOp (BinaryOperation Tokens.Difference) Sets.Difference;
-        cartesianProductOp = tknToBinOp (BinaryOperation Tokens.CartesianProduct) Sets.CartesianProduct;
+        tknToBinOp tkn op = do {
+            opTkn <- nodeTkn tkn;
+            return (op <$ opTkn);
+        };
+        unionOp = tknToBinOp
+            (BinaryOperation Tokens.Union)
+            Sets.Union;
+        differenceOp = tknToBinOp
+            (BinaryOperation Tokens.Difference)
+            Sets.Difference;
+        cartesianProductOp = tknToBinOp
+            (BinaryOperation Tokens.CartesianProduct)
+            Sets.CartesianProduct;
     };
 
     nodeUnaryOp :: Parser (Atom UnOp);
     nodeUnaryOp = powerOp where {
-        tknToUnOp tkn op = getCompose $ op <$ Compose (nodeTkn tkn);
+        tknToUnOp tkn op = do {
+            opTkn <- nodeTkn tkn;
+            return (op <$ opTkn);
+        };
         powerOp = tknToUnOp (UnaryOperation Tokens.Power) Sets.PowerSet;
     };
 
     nodePat :: Parser (Atom Pat);
-    nodePat = nodePatValue <|>
-        fmap List <$> nodePatList <|>
-        nodePatTuple;
+    nodePat = nodePatValue <|> nodePatListNode <|> nodePatTuple where {
+        nodePatListNode = do {
+            list <- nodePatList;
+            return $ List <$> list;
+        };
+    };
 
     nodePatValue :: Parser (Atom Pat);
-    nodePatValue = getCompose $ Value <$> Compose nodeWord;
+    nodePatValue = do {
+        value <- nodeWord;
+        return $ Value <$> value;
+    };
 
     nodePatList :: Parser (Atom [Pat]);
     nodePatList = sequenceA <$> listPat where {
@@ -202,7 +256,10 @@ module Parser where {
     };
 
     nodePatTuple :: Parser (Atom Pat);
-    nodePatTuple = getCompose $ Tuple <$> Compose (sequenceA <$> tuplePat) where {
+    nodePatTuple = do {
+        patterns <- sequenceA <$> tuplePat;
+        return $ Tuple <$> patterns;
+    } where {
         tuplePat = nodeTkn OpenParen *> many nodePat <* nodeTkn CloseParen
     };
 

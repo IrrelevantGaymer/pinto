@@ -3,8 +3,6 @@ module Lexer where {
     import Data.Char ( isSpace );
 
     import Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
-    import Data.Functor.Compose (Compose(..));
-    import Data.Functor ((<&>));
     import Data.Foldable (asum);
     
     type FileName = String;
@@ -83,6 +81,13 @@ module Lexer where {
         (Lexer x) <|> (Lexer y) = Lexer $ \input -> x input <|> y input;
     };
 
+    instance Monad Lexer where {
+        (Lexer x) >>= f = Lexer $ \input -> do {
+            (rest, y) <- x input;
+            runLexer (f y) rest;
+        };
+    };
+
     lexSpan :: (Char -> Bool) -> Lexer (Atom String);
     lexSpan p = Lexer $ \input -> let {
         (tkn, rest) = span (p . atomValue) input;
@@ -115,78 +120,139 @@ module Lexer where {
     ws = lexSpan isSpace;
 
     tknKwrdFor :: Lexer (Atom Tkn);
-    tknKwrdFor = getCompose $ Keyword For <$ Compose (lexStr "for");
+    tknKwrdFor = do {
+        kwrd <- lexStr "for";
+        return (Keyword For <$ kwrd);
+    };
 
     tknKwrdIn :: Lexer (Atom Tkn);
-    tknKwrdIn = getCompose $ Keyword In <$ Compose (lexStr "in");
+    tknKwrdIn = do {
+        kwrd <- lexStr "in";
+        return (Keyword In <$ kwrd);
+    };
 
     tknKwrdCase :: Lexer (Atom Tkn);
-    tknKwrdCase = getCompose $ Keyword Case <$ Compose (lexStr "case");
+    tknKwrdCase = do {
+        kwrd <- lexStr "case";
+        return (Keyword Case <$ kwrd);
+    };
 
     tknKwrdLet :: Lexer (Atom Tkn);
-    tknKwrdLet = getCompose $ Keyword Let <$ Compose (lexStr "let");
+    tknKwrdLet = do {
+        kwrd <- lexStr "let";
+        return (Keyword Let <$ kwrd);
+    };
 
     tknKwrdStart :: Lexer (Atom Tkn);
-    tknKwrdStart = getCompose $ Keyword Start <$ Compose (lexStr "start");
+    tknKwrdStart = do {
+        kwrd <- lexStr "start";
+        return (Keyword Start <$ kwrd);
+    };
 
     tknKwrdWith :: Lexer (Atom Tkn);
-    tknKwrdWith = getCompose $ Keyword With <$ Compose (lexStr "with");
+    tknKwrdWith = do {
+        kwrd <- lexStr "with";
+        return (Keyword With <$ kwrd);
+    };
 
     tknArrow :: Lexer (Atom Tkn);
     tknArrow = tknLeftArrow <|> tknRightArrow where {
-        stringToDir string dir = getCompose $ Arrow dir <$ Compose (lexStr string);
+        stringToDir string dir = do {
+            arrowString <- lexStr string;
+            return (Arrow dir <$ arrowString);
+        };
         tknLeftArrow  = stringToDir "<-" L;
         tknRightArrow = stringToDir "->" R;
     };
 
     tknString :: Lexer (Atom Tkn);
-    tknString = getCompose $ Compose stringPattern <&> StringLiteral where {
+    --TODO: Account for Escape Characters
+    tknString = do {
+        string <- stringPattern;
+        return $ StringLiteral <$> string;
+    } where {
         stringPattern = lexChar '\"' *> lexSpan (/= '\"') <* lexChar '\"'
     };
 
     tknOpenParen :: Lexer (Atom Tkn);
-    tknOpenParen = getCompose $ OpenParen <$ Compose (lexChar '(');
+    tknOpenParen = do {
+        char <- lexChar '(';
+        return (OpenParen <$ char);
+    };
 
     tknCloseParen :: Lexer (Atom Tkn);
-    tknCloseParen = getCompose $ CloseParen <$ Compose (lexChar ')');
+    tknCloseParen = do {
+        char <- lexChar ')';
+        return (CloseParen <$ char);
+    };
 
     tknOpenBrace :: Lexer (Atom Tkn);
-    tknOpenBrace = getCompose $ OpenBrace <$ Compose (lexChar '{');
+    tknOpenBrace = do {
+        char <- lexChar '{';
+        return (OpenBrace <$ char);
+    };
 
     tknCloseBrace :: Lexer (Atom Tkn);
-    tknCloseBrace = getCompose $ CloseBrace <$ Compose (lexChar '}');
+    tknCloseBrace = do {
+        char <- lexChar '}';
+        return (CloseBrace <$ char);
+    };
 
     tknOpenBracket :: Lexer (Atom Tkn);
-    tknOpenBracket = getCompose $ OpenBracket <$ Compose (lexChar '[');
+    tknOpenBracket = do {
+        char <- lexChar '[';
+        return (OpenBracket <$ char);
+    };
 
     tknCloseBracket :: Lexer (Atom Tkn);
-    tknCloseBracket = getCompose $ CloseBracket <$ Compose (lexChar ']');
+    tknCloseBracket = do {
+        char <- lexChar ']';
+        return (CloseBracket <$ char);
+    };
 
     tknAssign :: Lexer (Atom Tkn);
-    tknAssign = getCompose $ Assign <$ Compose (lexChar '=');
+    tknAssign =do {
+        char <- lexChar '=';
+        return (Assign <$ char);
+    };
 
     tknBinOpUnion :: Lexer (Atom Tkn);
-    tknBinOpUnion = getCompose $ op <$ Compose (lexChar '+') where {
+    tknBinOpUnion = do {
+        char <- lexChar '+';
+        return (op <$ char);
+    } where {
         op = BinaryOperation Union;
     };
 
     tknBinOpDifference :: Lexer (Atom Tkn);
-    tknBinOpDifference = getCompose $ op <$ Compose (lexChar '-') where {
+    tknBinOpDifference = do {
+        char <- lexChar '-';
+        return (op <$ char);
+    } where  {
         op = BinaryOperation Difference
     };
 
     tknBinOpCartesianProduct :: Lexer (Atom Tkn);
-    tknBinOpCartesianProduct = getCompose $ op <$ Compose (lexChar '*') where {
+    tknBinOpCartesianProduct = do {
+        char <- lexChar '*';
+        return (op <$ char);
+    } where  {
         op = BinaryOperation CartesianProduct
     };
 
     tknUnOpPower :: Lexer (Atom Tkn);
-    tknUnOpPower = getCompose $ op <$ Compose (lexChar '$') where {
+    tknUnOpPower = do {
+        char <- lexChar '$';
+        return (op <$ char);
+    } where  {
         op = UnaryOperation Power
     };
 
     tknWord :: Lexer (Atom Tkn);
-    tknWord = getCompose $ Word <$> Compose lexValidWord where {
+    tknWord = do {
+        validWord <- lexValidWord;
+        return $ Word <$> validWord;
+    } where {
         lexValidWord = lexFilter (not . null . atomValue) (lexSpan isValidChar);
         isValidChar char = all ($ char) [
             not . isSpace,
