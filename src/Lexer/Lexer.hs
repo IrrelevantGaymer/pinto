@@ -202,19 +202,23 @@ module Lexer where {
 
     lexTkn :: Lexer (Atom Tkn);
     lexTkn = asum [
-        -- keywords --
-        tknKwrdFor, tknKwrdIn, tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith,
-        -- delimiters --
-        tknOpenParen, tknCloseParen, tknOpenBrace, tknCloseBrace, 
-            tknOpenBracket, tknCloseBracket,
-        -- operations and other special characters
-        tknAssign, tknArrow, tknUnOpPower, tknBinOpUnion, 
-            tknBinOpDifference, tknBinOpCartesianProduct,
-        -- multi character --
-        tknString, tknWord,
-        -- invalid -- 
-        tknInvalid
-    ];
+        tknKeywords, tknDelimiters, tknOperations, tknMultiCharacter, tknInvalid
+    ] where {
+        tknKeywords = asum [
+            tknKwrdFor, tknKwrdIn, tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith
+        ];
+        tknDelimiters = asum [
+            tknOpenParen, tknCloseParen, 
+            tknOpenBrace, tknCloseBrace, 
+            tknOpenBracket, tknCloseBracket
+        ];
+        tknOperations = asum [
+            tknAssign, tknArrow, 
+            tknUnOpPower, 
+            tknBinOpUnion, tknBinOpDifference, tknBinOpCartesianProduct
+        ];
+        tknMultiCharacter = asum [tknString, tknWord]
+    };
 
     lex :: [Atom Char] -> [Atom Tkn] -> Maybe [Atom Tkn];
     lex [] tkns = Just tkns;
