@@ -97,6 +97,16 @@ module Lexer where {
             | otherwise           = Nothing;
         f []     = Nothing;
     };
+
+    lexFilter :: (a -> Bool) -> Lexer a -> Lexer a;
+    lexFilter p (Lexer x) = Lexer $ \input -> do {
+        (rest, x') <- x input;
+        if p x' then
+            return (rest, x');
+        else
+            empty;
+    };
+
     specialChars :: [Char];
     specialChars = "(){}[]=$+-*&^";
 
@@ -175,11 +185,18 @@ module Lexer where {
     };
 
     tknWord :: Lexer (Atom Tkn);
-    tknWord = getCompose $ Word <$> Compose (lexSpan isValidChar) where {
+    tknWord = getCompose $ Word <$> Compose lexValidWord where {
+        lexValidWord = lexFilter (not . null . atomValue) (lexSpan isValidChar);
         isValidChar char = all ($ char) [
             not . isSpace, 
             not . flip elem specialChars
         ]
+    };
+
+    tknInvalid :: Lexer (Atom Tkn);
+    tknInvalid = Lexer f where {
+        f (x:xs) = Just (xs, x { atomValue = Invalid });
+        f [] = Nothing;
     };
 
     lexTkn :: Lexer (Atom Tkn);
