@@ -58,7 +58,7 @@ module Parser where {
     instance Monad Parser where {
         (Parser x) >>= f = Parser $ \input -> do {
             (rest, y) <- x input;
-            runParser (f $! y) $! rest
+            runParser (f y) rest
         };
     };
 
