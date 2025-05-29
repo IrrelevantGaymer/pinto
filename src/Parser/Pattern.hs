@@ -1,6 +1,6 @@
 module Pattern where {
     type Pat = Pattern;
-    data Pattern = Value String | List [Pattern] | Tuple [Pattern] deriving(Eq);
+    data Pattern = Value String | List [Pattern] | Tuple [Pattern] | Discard deriving(Eq);
 
     instance Show Pattern where {
         show (Value value) = value;
@@ -16,5 +16,6 @@ module Pattern where {
             s2 (x:xs) = " " ++ show x ++ s2 xs;
             s2 [] = "";
         };
+        show Discard = "_"
     };
 }
