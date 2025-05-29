@@ -324,10 +324,11 @@ start tape with RotateClockwise = [ (A B C) (C B A) RotateCounterClockwise (A B 
 
 ## TODO
 
-[X] - Lexer
-[ ] - Parser
-[ ] - Universal Quantification
-[ ] - Maps
-[ ] - Interpreter
-[ ] - Multiple Files
-[ ] - Standard Library
+[X] - Lexer \
+[X] - Parser \
+[ ] - Sets \
+[ ] - Universal Quantification \
+[ ] - Maps \
+[X] - Interpreter \
+[X] - Multiple Files \
+[ ] - Standard Library \
