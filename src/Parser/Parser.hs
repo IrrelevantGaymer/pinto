@@ -199,14 +199,15 @@ module Parser where {
 
     parse :: [Atom Tkn] -> AST -> Either ParserError AST;
     parse [Atom EndOfFile _ _] ast = Right ast;
-    parse input (AST sets tapes rules) = do {
+    parse input ast = do {
         (input', node) <- runParser parseNode input;
         let {
-            ast' = case node of {
-                SetNode  set  -> AST (set : sets) tapes rules;
-                TapeNode tape -> AST sets (tape : tapes) rules;
-                RuleNode rule -> AST sets tapes (rule : rules);
+            node_ast = case node of {
+                SetNode  set  -> mempty {astSets =  [set] };
+                TapeNode tape -> mempty {astTapes = [tape]};
+                RuleNode rule -> mempty {astRules = [rule]};
             };
+            ast' = ast <> node_ast;
         };
         parse input' ast';
     };

@@ -6,12 +6,20 @@ module AST where {
     
     data AST = AST {
         astSets :: [(String, SetDef)],
-        astStartingTapes :: [Tape],
+        astTapes :: [Tape],
         astRules :: [Rule]
     } deriving(Show);
 
-    emptyAST :: AST;
-    emptyAST = AST [] [] [];
+    instance Semigroup AST where {
+        (AST aSets aRules aTapes) <> (AST bSets bRules bTapes) = AST 
+            (aSets  <> bSets ) 
+            (aRules <> bRules) 
+            (aTapes <> bTapes);
+    };
+
+    instance Monoid AST where {
+      mempty = AST [] [] [];
+    };
 
     data Node = SetNode (String, SetDef) | RuleNode Rule | TapeNode Tape deriving(Show);
 

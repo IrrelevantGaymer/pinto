@@ -5,7 +5,6 @@ module Main where {
     import Tokens ( Tkn );
     import Parser (parse);
     import Interpreter (InterpreterSettings (..), interpretAST);
-    import AST (emptyAST);
 
     main :: IO();
     main = do {
@@ -22,7 +21,7 @@ module Main where {
         }; 
         "parse" -> do {
             tkns <- tokenize rest;
-            ast <- case parse tkns emptyAST of {
+            ast <- case parse tkns mempty of {
                 Right ast -> return ast;
                 Left err -> ioError $ userError $ show err;
             };
@@ -30,7 +29,7 @@ module Main where {
         };
         "interpret" -> do {
             tkns <- tokenize rest;
-            ast <- case parse tkns emptyAST of {
+            ast <- case parse tkns mempty of {
                 Right ast -> return ast;
                 Left err -> ioError $ userError $ show err;
             };
