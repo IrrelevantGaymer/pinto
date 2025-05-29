@@ -2,10 +2,11 @@ module Lexer where {
     import Control.Applicative ( Alternative((<|>), empty) );
     import Data.Char ( isSpace );
 
-    import Tokens;
+    import Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
     import Data.Functor.Compose (Compose(..));
     import Data.Functor ((<&>));
-
+    import Data.Foldable (asum);
+    
     type FileName = String;
     type Row = Int;
     type Col = Int;
@@ -92,8 +93,8 @@ module Lexer where {
 
     lexChar :: Char -> Lexer (Atom Char);
     lexChar char = Lexer f where {
-        f (x:xs) 
-            | char == atomValue x = Just (xs, x) 
+        f (x:xs)
+            | char == atomValue x = Just (xs, x)
             | otherwise           = Nothing;
         f []     = Nothing;
     };
@@ -188,7 +189,7 @@ module Lexer where {
     tknWord = getCompose $ Word <$> Compose lexValidWord where {
         lexValidWord = lexFilter (not . null . atomValue) (lexSpan isValidChar);
         isValidChar char = all ($ char) [
-            not . isSpace, 
+            not . isSpace,
             not . flip elem specialChars
         ]
     };
@@ -200,10 +201,20 @@ module Lexer where {
     };
 
     lexTkn :: Lexer (Atom Tkn);
-    lexTkn = tknKwrdFor   <|> tknKwrdIn     <|> tknKwrdCase    <|> tknKwrdLet      <|>
-             tknKwrdStart <|> tknKwrdWith   <|> tknOpenParen   <|> tknCloseParen   <|>
-             tknOpenBrace <|> tknCloseBrace <|> tknOpenBracket <|> tknCloseBracket <|>
-             tknAssign    <|> tknArrow      <|> tknString      <|> tknWord;
+    lexTkn = asum [
+        -- keywords --
+        tknKwrdFor, tknKwrdIn, tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith,
+        -- delimiters --
+        tknOpenParen, tknCloseParen, tknOpenBrace, tknCloseBrace, 
+            tknOpenBracket, tknCloseBracket,
+        -- operations and other special characters
+        tknAssign, tknArrow, tknUnOpPower, tknBinOpUnion, 
+            tknBinOpDifference, tknBinOpCartesianProduct,
+        -- multi character --
+        tknString, tknWord,
+        -- invalid -- 
+        tknInvalid
+    ];
 
     lex :: [Atom Char] -> [Atom Tkn] -> Maybe [Atom Tkn];
     lex [] tkns = Just tkns;
