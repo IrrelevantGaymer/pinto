@@ -158,7 +158,7 @@ module Parser where {
     };
     nestByPrecedence (Id s1) op (Id s2) = BinOpSet op s1 s2;
     nestByPrecedence a o b = error $ 
-        printf "messed up Id: %s %s %s" (show a) (show o) (show b);
+        printf "unreachable pattern: %s %s %s" (show a) (show o) (show b);
 
     nodeAtomSet :: Parser (Atom SetDef);
     nodeAtomSet = getCompose $ Id <$> Compose atom where {
