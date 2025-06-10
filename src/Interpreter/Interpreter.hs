@@ -41,7 +41,9 @@ module Interpreter where {
                 replicate (length (show state) + 2 + offset) ' ' ++
                 take len ("^" ++ repeat '~');
             Nothing -> ioError $ userError $ printf
-                "tried to access value of index %d when there's only %d number of patters"
+                "tried to access value of index %d \
+                    \when there's only %d \
+                    \number of patters"
                 idx
                 (length values);
         };
