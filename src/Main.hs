@@ -5,7 +5,8 @@ module Main where {
     import Tokens ( Tkn );
     import Parser (parse);
     import Interpreter (InterpreterSettings (..), interpretAST);
-
+    import FullResult (FullResult(..));
+    
     main :: IO();
     main = do {
         args <- getArgs;
@@ -22,16 +23,20 @@ module Main where {
         "parse" -> do {
             tkns <- tokenize rest;
             ast <- case parse tkns mempty of {
-                Right ast -> return ast;
-                Left err -> ioError $ userError $ show err;
+                Ok ast -> return ast;
+                Soft err -> ioError $ userError $ show err;
+                Hard err -> ioError $ userError $ show err;
+                Empty -> ioError $ userError "parsing resulted in empty";
             };
             print ast;
         };
         "interpret" -> do {
             tkns <- tokenize rest;
             ast <- case parse tkns mempty of {
-                Right ast -> return ast;
-                Left err -> ioError $ userError $ show err;
+                Ok ast -> return ast;
+                Soft err -> ioError $ userError $ show err;
+                Hard err -> ioError $ userError $ show err;
+                Empty -> ioError $ userError "parsing resulted in empty";
             };
             interpretAST (InterpreterSettings True) ast;
         };
