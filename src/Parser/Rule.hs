@@ -3,7 +3,7 @@ module Rule where {
     import Pattern ( Pat, Pattern (..) );
     import Tape (Tape (..));
     import qualified Direction as Dir;
-    import Sets (SetDef);
+    import Sets (SetDef (..), getPatternKeys, SetShape (..), valueInSet, valueInIdxSet, Sets, Keys);
     
     data Rule = SimpleRule BasicRule | ComplexRule UQRule deriving(Show);
 
@@ -19,6 +19,9 @@ module Rule where {
     data UniversalQuantifierRule = UniversalQuantifierRule {
         uqPat    :: Pat String,
         uqPatSet :: SetDef,
+        uqRules  :: [Rule]
+    };
+
 
     {-
      - TODO: maybe have applyRule return a Maybe Tape or a (Bool, Tape)
