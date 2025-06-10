@@ -6,6 +6,7 @@ module Interpreter where {
     import Rule (Rule (..), applyRule, canApplyRule);
     import Pattern (Pat);
     import Tape (Tape(..));
+    import Sets (Sets);
     
     newtype InterpreterSettings = InterpreterSettings {
         interpreterSettingsDebug :: Bool
@@ -13,20 +14,20 @@ module Interpreter where {
 
     interpretAST :: InterpreterSettings -> AST -> IO ();
     interpretAST settings (AST sets (tape:tapes) rules) = do {
-        _ <- interpretTape settings tape rules;
+        _ <- interpretTape settings tape sets rules;
         interpretAST settings (AST sets tapes rules);
     };
     interpretAST _ (AST _ [] _) = return ();
 
-    interpretTape :: InterpreterSettings -> Tape -> [Rule] -> IO ();
-    interpretTape settings tape rules = do {
+    interpretTape :: InterpreterSettings -> Tape -> Sets -> [Rule] -> IO ();
+    interpretTape settings tape sets rules = do {
         when (interpreterSettingsDebug settings) $
             printTape tape;
         let {
-            rule = find (canApplyRule tape) rules;
+            rule = find (canApplyRule tape sets) rules;
         };
-        case applyRule tape <$> rule of {
-            Just newTape -> interpretTape settings newTape rules;
+        case applyRule tape sets <$> rule of {
+            Just newTape -> interpretTape settings newTape sets rules;
             Nothing -> return ();
         };
     };

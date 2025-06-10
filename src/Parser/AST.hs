@@ -2,7 +2,7 @@ module AST where {
     import Rule (Rule);
     import Pattern (Pat);
     import Tape (Tape);
-    import Sets (SetDef);
+    import Sets (SetDef, Sets);
     
     data AST = AST {
         astSets :: [(String, SetDef)],

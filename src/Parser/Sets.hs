@@ -17,4 +17,11 @@ module Sets where {
         UnOpSet !UnOp !SetDef |
         BinOpSet !BinOp !SetDef !SetDef |
         Id !SetDef deriving(Show);
+
+    -- TODO: make this a HashMap instead
+    type Sets = [(String, SetDef)];
+
+    -- TODO: make this a HashMap instead
+    type Keys = [(String, SetShape)];
+
 }

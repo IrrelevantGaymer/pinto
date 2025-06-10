@@ -19,12 +19,17 @@ module Rule where {
     data UniversalQuantifierRule = UniversalQuantifierRule {
         uqPat    :: Pat String,
         uqPatSet :: SetDef,
-        uqRules :: [Rule]
-    } deriving(Show);
 
-    applyRule :: Tape -> Rule -> Tape;
-    applyRule tape (SimpleRule basicRule) = applyBasicRule tape basicRule;
-    applyRule tape (ComplexRule uqRule) = applyUQRule tape uqRule;
+    {-
+     - TODO: maybe have applyRule return a Maybe Tape or a (Bool, Tape)
+     - so that we don't have this two-step process of canApplyRule -> applyRule
+     - If canApplyRule/applyRule are expensive operations, then this
+     - could have 2x improvements. 
+     -}
+
+    applyRule :: Tape -> Sets -> Rule -> Tape;
+    applyRule tape _ (SimpleRule basicRule) = applyBasicRule tape basicRule;
+    applyRule tape sets (ComplexRule uqRule) = applyUQRule tape sets uqRule;
 
     applyBasicRule :: Tape -> BasicRule -> Tape;
     applyBasicRule tape rule = Tape tName rNextState newTValues newTIdx where {
