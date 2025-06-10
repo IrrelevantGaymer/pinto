@@ -48,14 +48,14 @@ module Interpreter where {
         return ();
     };
 
-    showValues :: [Pat] -> String;
+    showValues :: [Pat String] -> String;
     showValues (x:xs) = " " ++ show x ++ showValues xs;
     showValues [] = "";
 
     type Offset = Int;
     type Length = Int;
     type Index = Int;
-    idxOffsetLen :: [Pat] -> Index -> Offset -> Maybe (Offset, Length);
+    idxOffsetLen :: [Pat String] -> Index -> Offset -> Maybe (Offset, Length);
     idxOffsetLen (x:_) 0 offset = Just (offset, length $ show x);
     idxOffsetLen (x: xs) idx offset
         | idx < 0   = Nothing

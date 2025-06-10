@@ -8,16 +8,16 @@ module Rule where {
     data Rule = SimpleRule BasicRule | ComplexRule UQRule deriving(Show);
 
     data BasicRule = BasicRule {
-        ruleCurrentState :: Pat,
-        ruleFromValue :: Pat,
-        ruleToValue :: Pat,
-        ruleDir :: Dir,
-        ruleNextState :: Pat
+        ruleCurrentState :: Pat String,
+        ruleFromValue    :: Pat String,
+        ruleToValue      :: Pat String,
+        ruleDir          :: Dir,
+        ruleNextState    :: Pat String
     } deriving(Show);
 
     type UQRule = UniversalQuantifierRule;
     data UniversalQuantifierRule = UniversalQuantifierRule {
-        uqPat :: Pat,
+        uqPat    :: Pat String,
         uqPatSet :: SetDef,
         uqRules :: [Rule]
     } deriving(Show);
