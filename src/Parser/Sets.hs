@@ -1,5 +1,6 @@
 module Sets where {
-    import Pattern (Pat);
+    import Pattern (Pat, getShape, Pattern (..), PatShape, PatternShape (..));
+    import Text.Printf (printf);
     
     type UnOp = UnarySetOperation;
     data UnarySetOperation = PowerSet deriving(Show);
@@ -21,11 +22,51 @@ module Sets where {
     -- TODO: make this a HashMap instead
     type Sets = [(String, SetDef)];
 
+    inSetByPred :: Sets -> (Pat String -> Bool) -> SetDef -> Bool;
+    inSetByPred _ f (Set pats) = or $ fmap f pats;
+    inSetByPred sets f (Word set) = 
+        or $ inSetByPred sets f . snd <$> findByKey fst set sets 
+    where {
+        findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
+        findByKey _ _ [] = Nothing;
+        findByKey g k (x:xs)
+            | g x == k  = Just x
+            | otherwise = findByKey g k xs
+    };
+    inSetByPred _ _ (UnOpSet PowerSet _) = False;
+    inSetByPred sets f (BinOpSet Union setA setB) =
+        inSetByPred sets f setA || inSetByPred sets f setB;
+    inSetByPred sets f (BinOpSet Difference setA setB) =
+        not $ inSetByPred sets f setB && inSetByPred sets f setA;
+    inSetByPred _ _ (BinOpSet CartesianProduct _ _) = False;
+    inSetByPred _ _ (Id set) = error $ printf
+        "Id %s should only be used for parsing set expressions"
+        $ show set;
+
     data SetShape = SetRef SetDef | IdxInSetRef [Int] SetDef deriving (Show);
 
     -- TODO: make this a HashMap instead
     type Keys = [(String, SetShape)];
 
+    valueInSet :: Sets -> Pat String -> SetDef -> Bool;
+    valueInSet sets value = inSetByPred sets (value ==);
+
+    valueInIdxSet :: Sets -> [Int] -> String -> SetDef -> Bool;
+    valueInIdxSet sets indices value = inSetByPred sets (valueIn indices value) where {
+        valueIn :: [Int] -> String -> Pat String -> Bool;
+        valueIn (idx:idcs) k (Tuple vs) = or $ valueIn idcs k <$> vs !? idx;
+        valueIn (idx:idcs) k (List vs) = or $ valueIn idcs k <$> vs !? idx;
+        valueIn [] k (Value v) = k == v;
+        valueIn _ _ _ = False;
+
+        infixl 9 !?;
+        (!?) :: [a] -> Int -> Maybe a;
+        []     !? _     = Nothing;
+        (x:_)  !? 0     = Just x;
+        (_:xs) !? idx
+            | idx > 0   = xs !? (idx - 1)
+            | otherwise = Nothing;
+    };
 
     getPatternShape :: SetDef -> Sets -> Maybe PatShape;
     getPatternShape (Set pats) _ = Just $ mconcat $ fmap getShape pats;
