@@ -1,0 +1,6 @@
+for a in All case (Reset a) _ _ <- a
+
+case Cycle A B -> (Reset Cycle)
+case Cycle B C -> (Reset Cycle)
+case Cycle C D -> (Reset Cycle)
+case Cycle D F -> (Reset Halt)

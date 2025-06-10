@@ -1,0 +1,20 @@
+let Bits = { 0 1 }
+
+for  a      in Bits               case  I      a a -> (I a)
+for (a b)   in Bits * Bits        case (I a)   b b -> (I a b)
+for (a b c) in Bits * Bits * Bits case (I a b) c c <- (I a b c) 
+
+for a in Bits {
+    case (I 0 0 0) a 0 -> (I a)
+    case (I 0 0 1) a 1 -> (I a)
+    case (I 0 1 0) a 1 -> (I a)
+    case (I 0 1 1) a 1 -> (I a)
+    case (I 1 0 0) a 0 -> (I a)
+    case (I 1 0 1) a 1 -> (I a)
+    case (I 1 1 0) a 1 -> (I a)
+    case (I 1 1 1) a 0 -> (I a)
+}
+
+case Go beg beg -> I
+
+start tape with Go = [beg 1 0 1 0 1 0 1 0 1 end]
