@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Rule where {
-    import Direction ( Dir );
-    import Pattern ( Pat, Pattern (..) );
+    import Direction (Dir);
+    import Pattern (Pat, Pattern (..));
     import Tape (Tape (..));
     import qualified Direction as Dir;
     import Sets (SetDef (..), getPatternKeys, SetShape (..), valueInSet, valueInIdxSet, Sets, Keys);
@@ -268,7 +268,7 @@ module Rule where {
         where {
             combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
             combine a b = (++) <$> a <*> b;
-    };
+        };
         getPatKeys (List uqPats) (List tPats)
             | length uqPats == length tPats = 
                 foldl combine (Just []) $ uncurry getPatKeys <$> zip uqPats tPats
