@@ -22,7 +22,7 @@ module Parser where {
     import Tape (Tape(..));
     import Sets (BinOp, UnOp, SetDef (..), BinarySetOperation (..), UnarySetOperation (..), getPrecedence);
     import Text.Printf (printf);
-    import FullResult (FullResult (..), injectMapHard, FullFunctor (..), FullMonad (..), FullApplicative (..), (<|&|>), (<:&:>));;;;;;;;
+    import FullResult (FullResult (..), injectMapHard, FullFunctor (..), FullMonad (..), FullApplicative (..), (<|&|>), (<:&:>));
     import Data.Foldable (asum);
 
     newtype Parser s h a = Parser {
