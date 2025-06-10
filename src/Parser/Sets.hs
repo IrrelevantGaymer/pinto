@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Sets where {
     import Pattern (Pat, getShape, Pattern (..), PatShape, PatternShape (..));
     import Text.Printf (printf);
@@ -102,4 +103,43 @@ module Sets where {
     getPatternShape (Id set) _ = error $ printf
         "Id %s should only be used for parsing set expressions"
         $ show set;
+
+    getPatternKeys :: Pat String -> SetDef -> Sets -> Maybe Keys;
+    getPatternKeys (Value pat) def _ = Just [(pat, SetRef def)];
+    getPatternKeys (List _) _ _ = undefined;
+    getPatternKeys (Tuple pats) set@(BinOpSet CartesianProduct _ _) sets = do {
+        (rest, keys) <- getKey pats set;
+        if null rest then
+            return keys;
+        else
+            Nothing;
+    } where {
+        getKey ps (BinOpSet CartesianProduct setA' setB') = do {
+            (ps', keys) <- getKey ps setA';
+            (ps'', keys') <- getKey ps' setB';
+            return (ps'', keys ++ keys');
+        };
+        getKey (p:ps) s = (ps,) <$> getPatternKeys p s sets;
+        getKey [] _ = Nothing;
+    };
+    getPatternKeys (Tuple pats) def sets
+        | Just (T len defs) <- defShape = if length pats == len then
+            getKeys (zip [0..] pats) [] defs;
+        else
+            Nothing
+        | otherwise = Nothing
+    where {
+        defShape = getPatternShape def sets;
+        getKeys ((idx, x):xs) idcs shp
+            | Value v <- x, V <- shp = ((v, IdxInSetRef (idcs ++ [idx]) def) :) 
+                <$> getKeys xs idcs shp
+            | Tuple vs <- x, T l shp' <- shp = if l == length vs then
+                getKeys (zip [0..] vs) (idcs ++ [idx]) shp'
+            else 
+                Nothing
+            | List _ <- x, L _ <- shp = undefined
+            | otherwise = Nothing;
+        getKeys [] _ _ = Just []
+    };
+    getPatternKeys Discard _ _ = Just [];
 }
