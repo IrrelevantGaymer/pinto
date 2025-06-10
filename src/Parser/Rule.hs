@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 module Rule where {
     import Direction ( Dir );
     import Pattern ( Pat, Pattern (..) );
