@@ -21,6 +21,8 @@ module Sets where {
     -- TODO: make this a HashMap instead
     type Sets = [(String, SetDef)];
 
+    data SetShape = SetRef SetDef | IdxInSetRef [Int] SetDef deriving (Show);
+
     -- TODO: make this a HashMap instead
     type Keys = [(String, SetShape)];
 
