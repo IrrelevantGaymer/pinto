@@ -6,7 +6,7 @@ module AST where {
     import Text.Printf (printf);
     
     data AST = AST {
-        astSets :: [(String, SetDef)],
+        astSets  :: Sets,
         astTapes :: [Tape],
         astRules :: [Rule]
     };
