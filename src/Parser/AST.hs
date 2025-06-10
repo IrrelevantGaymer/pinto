@@ -1,8 +1,9 @@
 module AST where {
-    import Rule (Rule);
+    import Rule (Rule (..), showUQRule);
     import Pattern (Pat);
     import Tape (Tape);
     import Sets (SetDef, Sets);
+    import Text.Printf (printf);
     
     data AST = AST {
         astSets :: [(String, SetDef)],
