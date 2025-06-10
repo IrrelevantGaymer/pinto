@@ -5,6 +5,9 @@ module Rule where {
     import Tape (Tape (..));
     import qualified Direction as Dir;
     import Sets (SetDef (..), getPatternKeys, SetShape (..), valueInSet, valueInIdxSet, Sets, Keys);
+    import Data.Maybe (fromMaybe, isJust);
+    import Control.Monad (join);
+    import Data.Foldable (find);
     import Text.Printf (printf);
     
     data Rule = SimpleRule BasicRule | ComplexRule UQRule deriving(Show);
