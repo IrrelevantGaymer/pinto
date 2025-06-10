@@ -44,13 +44,14 @@ module Rule where {
     applyRule tape _ (SimpleRule basicRule) = applyBasicRule tape basicRule;
     applyRule tape sets (ComplexRule uqRule) = applyUQRule tape sets uqRule;
 
+    -- TODO: add support for nested Discards
     applyBasicRule :: Tape -> BasicRule -> Tape;
     applyBasicRule tape rule = Tape tName rNextState newTValues newTIdx where {
         (Tape tName _ tValues tIdx) = tape;
         (BasicRule _ rFromValue rToValue rDir rNextState) = rule;
         newTValues = case (rFromValue, rToValue) of {
             (Discard, Discard) -> tValues;
-            (_, Discard) -> error "Cannot apply basic rule with defined from Value and Discarded to Value";
+            (from, Discard) -> take tIdx tValues ++ from : drop (tIdx + 1) tValues;
             (_, to) -> take tIdx tValues ++ to : drop (tIdx + 1) tValues;
         };
         newTIdx = case rDir of {
