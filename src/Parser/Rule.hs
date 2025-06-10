@@ -10,7 +10,7 @@ module Rule where {
     import Data.Foldable (find);
     import Text.Printf (printf);
     
-    data Rule = SimpleRule BasicRule | ComplexRule UQRule deriving(Show);
+    data Rule = SimpleRule BasicRule | ComplexRule UQRule;
 
     data BasicRule = BasicRule {
         ruleCurrentState :: Pat String,
