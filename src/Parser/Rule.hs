@@ -13,16 +13,16 @@ module Rule where {
     data Rule = SimpleRule BasicRule | ComplexRule UQRule;
 
     data BasicRule = BasicRule {
-        ruleCurrentState :: Pat String,
-        ruleFromValue    :: Pat String,
-        ruleToValue      :: Pat String,
+        ruleCurrentState :: Pat,
+        ruleFromValue    :: Pat,
+        ruleToValue      :: Pat,
         ruleDir          :: Dir,
-        ruleNextState    :: Pat String
+        ruleNextState    :: Pat
     } deriving(Show);
 
     type UQRule = UniversalQuantifierRule;
     data UniversalQuantifierRule = UniversalQuantifierRule {
-        uqPat    :: Pat String,
+        uqPat    :: Pat,
         uqPatSet :: SetDef,
         uqRules  :: [Rule]
     };
@@ -64,7 +64,7 @@ module Rule where {
         };
     };
 
-    type PatKeys = [(String, Pat String)];
+    type PatKeys = [(String, Pat)];
 
     applyUQRule :: Tape -> Sets -> UQRule -> Tape;
     applyUQRule tape sets rule 
@@ -106,10 +106,10 @@ module Rule where {
 
         constructNewValue 
             :: PatKeys 
-            -> Maybe (Pat String) 
-            -> Maybe (Pat String) 
-            -> Pat String 
-            -> Pat String;
+            -> Maybe Pat 
+            -> Maybe Pat 
+            -> Pat 
+            -> Pat;
         constructNewValue rKeys _ _ (Value v) 
             | Just v' <- kLookup = v'
             | Nothing <- kLookup = Value v
@@ -147,10 +147,10 @@ module Rule where {
 
         constructNewValues 
             :: PatKeys 
-            -> [Pat String] 
-            -> [Pat String] 
-            -> [Pat String] 
-            -> [Pat String];
+            -> [Pat] 
+            -> [Pat] 
+            -> [Pat] 
+            -> [Pat];
         constructNewValues _ _ _ [] = [];
         constructNewValues rKeys ts fs (v:vs) = 
             constructNewValue rKeys (headMaybe ts) (headMaybe fs) v 
@@ -161,7 +161,7 @@ module Rule where {
             headMaybe (x:_) = Just x;
         };
 
-        getPatKeys :: Keys -> Pat String -> Pat String -> Maybe PatKeys;
+        getPatKeys :: Keys -> Pat -> Pat -> Maybe PatKeys;
         getPatKeys ks r@(Value key) t 
             | r == t                     = Just []
             | or (inShape t <$> uqShape) = Just [(key, t)]
@@ -243,7 +243,7 @@ module Rule where {
         };
         canApply (ComplexRule uqRule) = canApplyUQRule tape keys' sets uqRule;
 
-        getPatKeys :: Pat String -> Pat String -> Maybe [(String, Pat String)];
+        getPatKeys :: Pat -> Pat -> Maybe PatKeys;
         getPatKeys r@(Value key) t 
             | r == t                     = Just []
             | or (inShape t <$> uqShape) = Just [(key, t)]
@@ -280,7 +280,7 @@ module Rule where {
         getPatKeys Discard _ = Just [];
         getPatKeys _ _ = Nothing;
 
-        matchPatKeys :: [(String, Pat String)] -> [(String, Pat String)] -> Bool;
+        matchPatKeys :: PatKeys -> PatKeys -> Bool;
         matchPatKeys (a:as) bs 
             | Just bPat <- b = (aPat == bPat) && matchPatKeys as bs
             | Nothing   <- b = matchPatKeys as bs

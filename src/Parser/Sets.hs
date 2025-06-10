@@ -14,7 +14,7 @@ module Sets where {
     getPrecedence Union            = 2;
     getPrecedence Difference       = 2;
 
-    data SetDef = Set ![Pat String] |
+    data SetDef = Set ![Pat] |
         Word String |
         UnOpSet !UnOp !SetDef |
         BinOpSet !BinOp !SetDef !SetDef |
@@ -23,7 +23,7 @@ module Sets where {
     -- TODO: make this a HashMap instead
     type Sets = [(String, SetDef)];
 
-    inSetByPred :: Sets -> (Pat String -> Bool) -> SetDef -> Bool;
+    inSetByPred :: Sets -> (Pat -> Bool) -> SetDef -> Bool;
     inSetByPred _ f (Set pats) = or $ fmap f pats;
     inSetByPred sets f (Word set) = 
         or $ inSetByPred sets f . snd <$> findByKey fst set sets 
@@ -49,12 +49,12 @@ module Sets where {
     -- TODO: make this a HashMap instead
     type Keys = [(String, SetShape)];
 
-    valueInSet :: Sets -> Pat String -> SetDef -> Bool;
+    valueInSet :: Sets -> Pat -> SetDef -> Bool;
     valueInSet sets value = inSetByPred sets (value ==);
 
     valueInIdxSet :: Sets -> [Int] -> String -> SetDef -> Bool;
     valueInIdxSet sets indices value = inSetByPred sets (valueIn indices value) where {
-        valueIn :: [Int] -> String -> Pat String -> Bool;
+        valueIn :: [Int] -> String -> Pat -> Bool;
         valueIn (idx:idcs) k (Tuple vs) = or $ valueIn idcs k <$> vs !? idx;
         valueIn (idx:idcs) k (List vs) = or $ valueIn idcs k <$> vs !? idx;
         valueIn [] k (Value v) = k == v;
@@ -104,7 +104,7 @@ module Sets where {
         "Id %s should only be used for parsing set expressions"
         $ show set;
 
-    getPatternKeys :: Pat String -> SetDef -> Sets -> Maybe Keys;
+    getPatternKeys :: Pat -> SetDef -> Sets -> Maybe Keys;
     getPatternKeys (Value pat) def _ = Just [(pat, SetRef def)];
     getPatternKeys (List _) _ _ = undefined;
     getPatternKeys (Tuple pats) set@(BinOpSet CartesianProduct _ _) sets = do {

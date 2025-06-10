@@ -272,7 +272,7 @@ module Parser where {
         powerOp = tknToUnOp (UnaryOperation Tokens.Power) Sets.PowerSet;
     };
 
-    nodePat :: Parser ParserError ParserError (Atom (Pat String));
+    nodePat :: Parser ParserError ParserError (Atom Pat);
     nodePat = (nodePatValue <|> nodePatListNode <|> nodePatTuple) <:&:> CouldNotParsePattern . received where {
         nodePatListNode = do {
             list <- nodePatList;
@@ -280,13 +280,13 @@ module Parser where {
         };
     };
 
-    nodePatValue :: Parser ParserError ParserError (Atom (Pat String));
+    nodePatValue :: Parser ParserError ParserError (Atom Pat);
     nodePatValue = do {
         value <- nodeWord;
         return $ Value <$> value;
     };
 
-    nodePatList :: Parser ParserError ParserError (Atom [Pat String]);
+    nodePatList :: Parser ParserError ParserError (Atom [Pat]);
     nodePatList = sequenceA <$> listPat where {
         listPat = do {
             open <- nodeTkn OpenBracket;
@@ -296,7 +296,7 @@ module Parser where {
         };
     };
 
-    nodePatTuple :: Parser ParserError ParserError (Atom (Pat String));
+    nodePatTuple :: Parser ParserError ParserError (Atom Pat);
     nodePatTuple = do {
         patterns <- sequenceA <$> tuplePat;
         return $ Tuple <$> patterns;
