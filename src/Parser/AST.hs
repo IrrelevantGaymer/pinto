@@ -33,12 +33,14 @@ module AST where {
       mempty = AST [] [] [];
     };
 
-    data Node = SetNode (String, SetDef) | RuleNode Rule | TapeNode Tape deriving(Show);
+    data Node = SetNode (String, SetDef) | 
+        RuleNode Rule | 
+        TapeNode Tape;
 
     data Map = Map {
-        mapName :: String,
-        mapFromSet :: SetDef,
-        mapToSet :: SetDef,
+        mapName     :: String,
+        mapFromSet  :: SetDef,
+        mapToSet    :: SetDef,
         mapMappings :: [Mapping]
     } deriving(Show);
 
