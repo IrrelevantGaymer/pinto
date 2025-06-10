@@ -4,6 +4,7 @@ module Rule where {
     import Tape (Tape (..));
     import qualified Direction as Dir;
     import Sets (SetDef (..), getPatternKeys, SetShape (..), valueInSet, valueInIdxSet, Sets, Keys);
+    import Text.Printf (printf);
     
     data Rule = SimpleRule BasicRule | ComplexRule UQRule deriving(Show);
 
@@ -22,6 +23,15 @@ module Rule where {
         uqRules  :: [Rule]
     };
 
+    showUQRule :: UQRule -> Sets -> String;
+    showUQRule (UniversalQuantifierRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: %s}" (show keys) (showRules rules) where {
+        keys = getPatternKeys pat patSet sets;
+        showRules [SimpleRule basicRule] = show basicRule;
+        showRules ((SimpleRule basicRule):rs) = show basicRule ++ ", " ++ showRules rs;
+        showRules [ComplexRule uqRule] = showUQRule uqRule sets;
+        showRules ((ComplexRule uqRule):rs) = showUQRule uqRule sets ++ ", " ++ showRules rs;
+        showRules [] = "";
+    };
 
     {-
      - TODO: maybe have applyRule return a Maybe Tape or a (Bool, Tape)
