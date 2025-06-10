@@ -1,4 +1,5 @@
 let Bits = { 0 1 }
+let Count = { A B C D E F G H }
 
 for  a      in Bits               case  I      a a -> (I a)
 for (a b)   in Bits * Bits        case (I a)   b b -> (I a b)
@@ -15,6 +16,18 @@ for a in Bits {
     case (I 1 1 1) a 0 -> (I a)
 }
 
-case Go beg beg -> I
+for a in Count case Go (beg a) (beg a) -> I
 
-start tape with Go = [beg 1 0 1 0 1 0 1 0 1 end]
+for (a b) in Bits * Bits case (I a b) end end <- Dec
+for a in Bits case Dec a a <- Dec
+
+case Dec (beg H) (beg G) -> I
+case Dec (beg G) (beg F) -> I
+case Dec (beg F) (beg E) -> I
+case Dec (beg E) (beg D) -> I
+case Dec (beg D) (beg C) -> I
+case Dec (beg C) (beg B) -> I
+case Dec (beg B) (beg A) -> I
+case Dec (beg A) beg -> Halt
+
+start tape with Go = [(beg E) 1 0 1 0 1 0 1 0 1 end]
