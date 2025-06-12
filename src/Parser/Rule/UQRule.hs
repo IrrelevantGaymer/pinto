@@ -2,7 +2,7 @@ module Parser.Rule.UQRule where {
     import Parser.Sets (Sets, Keys, SetShape (..), valueInSet, valueInIdxSet, getPatternKeys);
     import Text.Printf (printf);
     import {-# SOURCE #-} Parser.Rule.Rule (UQRule, UniversalQuantifierRule (..), Rule (..), BasicRule (..));
-    import Parser.Pattern (Pattern(..), Pat);
+    import Parser.Pattern (Pattern(..), Pat, PatKeys);
     import Parser.Tape (Tape (..));
     import qualified Parser.Direction as Dir;
     import Data.Maybe (fromMaybe, isJust);
@@ -18,8 +18,6 @@ module Parser.Rule.UQRule where {
         showRules ((ComplexRule uqRule):rs) = showUQRule uqRule sets ++ ", " ++ showRules rs;
         showRules [] = "";
     };
-
-    type PatKeys = [(String, Pat)];
 
     applyUQRule :: Tape -> Sets -> UQRule -> Tape;
     applyUQRule tape sets rule 

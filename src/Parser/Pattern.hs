@@ -42,6 +42,8 @@ module Parser.Pattern where {
         mempty = D;
     };
 
+    type PatKeys = [(String, Pat)];
+
     getShape :: Pat -> PatShape;
     getShape (Tuple pats) = T (length pats) $ mconcat $ fmap getShape pats;
     -- This will require some experimentation
