@@ -35,30 +35,6 @@ module Parser.Sets where {
     -- TODO: make this a HashMap instead
     type Sets = [(String, SetDef)];
 
-    -- inSetByPred :: Sets -> (Pat -> Bool) -> SetDef -> Bool;
-    -- inSetByPred _ f (Set pats) = or $ fmap f pats;
-    -- inSetByPred sets f (Word set) 
-    --     | Just builtIn <- getBuiltInSet set = case builtIn of {
-    --         Any -> True;
-    --     }
-    --     | otherwise = or $ inSetByPred sets f . snd <$> findByKey fst set sets 
-    -- where {
-    --     findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
-    --     findByKey _ _ [] = Nothing;
-    --     findByKey g k (x:xs)
-    --         | g x == k  = Just x
-    --         | otherwise = findByKey g k xs
-    -- };
-    -- inSetByPred _ _ (UnOpSet PowerSet _) = False;
-    -- inSetByPred sets f (BinOpSet Union setA setB) =
-    --     inSetByPred sets f setA || inSetByPred sets f setB;
-    -- inSetByPred sets f (BinOpSet Difference setA setB) =
-    --     not $ inSetByPred sets f setB && inSetByPred sets f setA;
-    -- inSetByPred _ _ (BinOpSet CartesianProduct _ _) = False;
-    -- inSetByPred _ _ (Id set) = error $ printf
-    --     "Id %s should only be used for parsing set expressions"
-    --     $ show set;
-
     data SetShape = SetRef SetDef | IdxInSetRef [Int] SetDef deriving (Show);
 
     -- TODO: make this a HashMap instead
@@ -151,7 +127,7 @@ module Parser.Sets where {
         (_:xs) !? idx
             | idx > 0   = xs !? (idx - 1)
             | otherwise = Nothing;
-    };
+    }; 
     valueInIdxSet sets idcs value (Word set)
         | Just All <- tryBuiltIn = False -- The general pattern shape of All is Value not Tuple
         | Just Int <- tryBuiltIn = False -- The general pattern shape of Int is Value not Tuple
