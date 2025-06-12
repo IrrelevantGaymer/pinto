@@ -1,1 +1,1 @@
-let Sexpr a = { (Sexpr a), a }
+let Sexpr(A) = {a for a in A} + {(a b) for (a b) in Sexpr(A) * A}

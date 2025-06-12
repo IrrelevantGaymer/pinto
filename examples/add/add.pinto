@@ -1,7 +1,7 @@
 case AddStart _ _ -> Add
 case Add 0 <- (Print Halt)
-for n in Sexpr Decimal case Add (Pos n) (Pos n) -> (OpReset (Dec (Move <- (Inc AddStart))))
-for n in Sexpr Decimal case Add (Neg n) (Neg n) -> (OpReset (Inc (Move <- (Dec AddStart))))
+for n in Sexpr Decimal case Add (Pos n) (Pos n) -> (Reset (Dec (Move <- (Inc AddStart))))
+for n in Sexpr Decimal case Add (Neg n) (Neg n) -> (Reset (Inc (Move <- (Dec AddStart))))
 
 for dir a in Arrow * All case (Move dir a) _ _ dir a
 
