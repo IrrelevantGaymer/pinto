@@ -12,11 +12,20 @@ module AST where {
     };
 
     instance Show AST where {
-        show (AST sets tapes rules) = printf "{sets: %s, tapes: %s, rules: [%s]}" (show sets) (show tapes) (showRules rules) where {
+        show (AST sets tapes rules) = printf 
+            "{sets: %s, tapes: %s, rules: [%s]}" 
+            (show sets) 
+            (show tapes) 
+            (showRules rules) 
+        where {
             showRules [SimpleRule basicRule] = show basicRule;
-            showRules ((SimpleRule basicRule):rs) = show basicRule ++ ", " ++ showRules rs;
+            showRules ((SimpleRule basicRule):rs) = show basicRule ++ 
+                ", " ++ 
+                showRules rs;
             showRules [ComplexRule uqRule] = showUQRule uqRule sets;
-            showRules ((ComplexRule uqRule):rs) = showUQRule uqRule sets ++ ", " ++ showRules rs;
+            showRules ((ComplexRule uqRule):rs) = showUQRule uqRule sets ++ 
+                ", " ++ 
+                showRules rs;
             showRules [] = "";
 
         };
