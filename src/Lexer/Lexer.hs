@@ -1,6 +1,6 @@
 module Lexer.Lexer where {
-    import Control.Applicative ( Alternative((<|>), empty), optional );;
-    import Data.Char ( isSpace, isDigit, ord, toLower );
+    import Control.Applicative (Alternative((<|>), empty), optional);
+    import Data.Char (isSpace, isDigit, ord, toLower);
 
     import Lexer.Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
     import Data.Foldable (asum);
