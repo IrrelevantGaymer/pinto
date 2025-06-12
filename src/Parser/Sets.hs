@@ -20,7 +20,7 @@ module Parser.Sets where {
         BinOpSet !BinOp !SetDef !SetDef |
         Id !SetDef deriving(Show);
 
-    data BuiltInSet = All;
+    data BuiltInSet = All | Int;
 
     getBuiltInSet :: String -> Maybe BuiltInSet;
     getBuiltInSet "All" = Just All;
@@ -62,6 +62,8 @@ module Parser.Sets where {
     valueInSet _ value (Set pats) = value `elem` pats;
     valueInSet sets value (Word set)
         | Just All <- tryBuiltIn = True
+        | Just Int <- tryBuiltIn, Num _ <- value = True
+        | Just Int <- tryBuiltIn = False
         | Nothing  <- tryBuiltIn = or $ valueInSet sets value . snd <$> findByKey fst set sets
     where {
         tryBuiltIn = getBuiltInSet set;
@@ -113,6 +115,7 @@ module Parser.Sets where {
     };
     valueInIdxSet sets idcs value (Word set)
         | Just All <- tryBuiltIn = False -- The general pattern shape of All is Value not Tuple
+        | Just Int <- tryBuiltIn = False -- The general pattern shape of Int is Value not Tuple
         | Nothing  <- tryBuiltIn = or $ valueInIdxSet sets idcs value . snd <$> findByKey fst set sets
     where {
         tryBuiltIn = getBuiltInSet set;

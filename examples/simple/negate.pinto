@@ -1,0 +1,4 @@
+case Neg 1 -1 -> Neg
+case Neg 0b10 -0b10 -> Neg
+case Neg 0o77 -0o77 -> Neg
+case Neg 0xff -0xff -> Neg

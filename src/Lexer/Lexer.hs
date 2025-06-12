@@ -1,11 +1,12 @@
 module Lexer.Lexer where {
-    import Control.Applicative ( Alternative((<|>), empty) );
+    import Control.Applicative ( Alternative((<|>), empty), optional );;
     import Data.Char ( isSpace, isDigit, ord, toLower );
 
     import Lexer.Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
     import Data.Foldable (asum);
     import Data.Bits (Bits(shiftL));
     import Text.Read (readMaybe);
+    import Data.Maybe (isJust);
     
     type FileName = String;
     type Row = Int;
@@ -255,53 +256,67 @@ module Lexer.Lexer where {
 
     tknNum :: Lexer (Atom Tkn);
     tknNum = do { 
-        num <- lexDecNum <|> lexBinNum <|> lexOctNum <|> lexHexNum;
+        num <- lexBinNum <|> lexOctNum <|> lexHexNum <|> lexDecNum;
         return $ Num <$> num;
     } where {
         lexDecNum = do {
+            isNeg <- isJust <$> (optional $ lexChar '-');
             decNum <- lexSpan isDigit;
-            case readMaybe $ atomValue decNum of {
-                Just num -> return decNum {atomValue = num};
+            let {
+                sign | isNeg = -1 
+                     | otherwise = 1;
+            };
+            case (readMaybe $ atomValue decNum) of {
+                Just num -> return decNum {atomValue = num * sign};
                 Nothing  -> empty;
             };
         };
         lexBinNum = do {
+            isNeg <- isJust <$> (optional $ lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'b';
             binNum <- lexSpan (`elem` "01");
             let {
                 parsed = fmap (convertBinToDec . reverse) binNum;
+                sign | isNeg = -1 
+                     | otherwise = 1;
             };
             case atomValue parsed of {
-                Just num -> return parsed {atomValue = num};
+                Just num -> return parsed {atomValue = num * sign};
                 Nothing -> empty;
             };
         } where {
             convertBinToDec = convertBaseToDec '0' '1' 1;
         };
         lexOctNum = do {
+            isNeg <- isJust <$> (optional $ lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'o';
             octNum <- lexSpan ((`elem` ['0'..'7']) . toLower);
             let {
                 parsed = fmap (convertOctToDec . reverse) octNum;
+                sign | isNeg = -1 
+                     | otherwise = 1;
             };
             case atomValue parsed of {
-                Just num -> return parsed {atomValue = num};
+                Just num -> return parsed {atomValue = num * sign};
                 Nothing -> empty;
             };
         } where {
             convertOctToDec = convertBaseToDec '0' '7' 3;
         };
         lexHexNum = do {
+            isNeg <- isJust <$> (optional $ lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'x';
             hexNum <- lexSpan ((||) <$> (`elem` ['0'..'9']) <*> (`elem` ['a'..'f']) . toLower);
             let {
                 parsed = fmap (convertHexToDec . reverse . map toLower) hexNum;
+                sign | isNeg = -1 
+                     | otherwise = 1;
             };
             case atomValue parsed of {
-                Just num -> return parsed {atomValue = num};
+                Just num -> return parsed {atomValue = num * sign};
                 Nothing -> empty;
             };
         } where {
@@ -336,7 +351,7 @@ module Lexer.Lexer where {
 
     lexTkn :: Lexer (Atom Tkn);
     lexTkn = asum [
-        tknKeywords, tknDelimiters, tknOperations, tknMultiCharacter, tknInvalid
+        tknKeywords, tknDelimiters, tknNum, tknOperations, tknMultiCharacter, tknInvalid
     ] where {
         tknKeywords = asum [
             tknKwrdFor, tknKwrdIn, tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith
@@ -351,7 +366,7 @@ module Lexer.Lexer where {
             tknUnOpPower,
             tknBinOpUnion, tknBinOpDifference, tknBinOpCartesianProduct
         ];
-        tknMultiCharacter = asum [tknNum, tknString, tknWord]
+        tknMultiCharacter = asum [tknString, tknWord];
     };
 
     lex :: [Atom Char] -> [Atom Tkn] -> Maybe [Atom Tkn];
