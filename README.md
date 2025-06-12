@@ -12,6 +12,18 @@ A couple features that inspired me to make Pinto was recursive set definitions a
 
 Another big reason for this project is I wanted to create a project using Haskell. 
 
+## Build from Src
+
+These are temporary instructions to building Pinto from Src.  In the future, executables for targets will be provided, as well as a more universal build system such as make.
+
+1. Download Haskell using [GHCup](https://www.haskell.org/ghcup/)
+2. Make sure you can run the build.sh file.  If you are on Linux, great!  If not, heres a [stack overflow post](https://stackoverflow.com/questions/26522789/how-to-run-sh-on-windows-command-prompt) that'll help you be able to run .sh scripts in Windows.  If there's any issues, please create an issue in the repository.
+3. Run the build.sh file in a terminal to create a pinto executable.
+
+## Using Pinto
+
+These are temporary instructions to using Pinto.  There are 4 commands: help, lex, parse, and interpret.  The help command gives detailed descriptions and instructions to use the other commands (Not yet).  The lex command, when provided with files, will print out the tokens of the pinto program.  The parse command, when provided with files, will print out the Sets, Tapes, and Rules parsed in the pinto program.  The interpret command will run program, printing out the Tape and its State while highlighting the Head at every step.  The lex and parse commands are used for debug purposes.
+
 ## Example Programs
 
 At the moment, only the examples in the simple directory are supported.  The other examples use features which are not yet implemented yet.  As Pinto gets developed more and more, the examples will be useful to look at while there's a lack of documentation.
@@ -188,7 +200,9 @@ for n in Set {
 }
 ```
 
-**Not Implemeted Yet**: You can also use set builder notation to concisely define several elements.
+## **Not Implemeted Yet**: Set Builder
+
+You can also use set builder notation to concisely define several elements.  Set Builder Notation in math looks like {x*2|x∈ℤ}.  In Pinto, Set Builder Notation is very similar: "x*2" is some pattern comprised of Tuples, Symbols, and/or Maps; "|" is replaced with "for"; "x" is a Pattern matched to a set; "∈" is replaced with in; and "ℤ" is some Set.
 
 ```
 let Animal = {Cat Dog Fish Turtle}
@@ -210,43 +224,15 @@ let AnimalState = {Alive Dead}
 let Shrondiger = AnimalState * Animal
 ```
 
-**Not Implemented Yet**: You can also define generic sets.
+## **Not Implemented Yet**: Generic Sets
+
+You can also define generic sets.
 
 ```
 let Animal = {Cat Dog Fish Turtle}
 let Maybe(A) = {Nothing} + {(Just a) for a in A}
 
 for v in Maybe(Animal) case Tame v Nothing -> (Pet v)
-```
-
-#### Examples
-
-```
-let Numbers = { 1 2 3 4 5 6 7 8 9 0 }
-
-// Numbers * Numbers is a set including all possible combinations
-// between two Numbers.  We generate a rule for every combination
-// swapping the two.
-for a b in Numbers * Numbers case Swap (a b) (b a) -> Swap
-
-start tape with Swap = [ (9 6) (2 4) (8 0) (0 0) (5 8) & ]
-```
-
-The above machine ran in debug mode prints out:
-
-```
-Swap: (9 6) (2 4) (8 0) (0 0) (5 8) &
-      ^~~~~
-Swap: (6 9) (2 4) (8 0) (0 0) (5 8) &
-            ^~~~~
-Swap: (6 9) (4 2) (8 0) (0 0) (5 8) &
-                  ^~~~~
-Swap: (6 9) (4 2) (0 8) (0 0) (5 8) &
-                        ^~~~~
-Swap: (6 9) (4 2) (0 8) (0 0) (5 8) &
-                              ^~~~~
-Swap: (6 9) (4 2) (0 8) (0 0) (8 5) &
-                                    ^
 ```
 
 ### Set Operations
@@ -287,6 +273,9 @@ A * B * C: {(1 4 7) (1 4 8) (1 4 9) (1 5 7) (1 5 8) (1 5 9) (1 6 7) (1 6 8) (1 6
 
 The shape of each element in A * B * C is (_ _ _) instead of (_ (_ _))
 
+Note: \
+    At the moment, only Union, Difference, and Cartesian Product are implemented.  Power Set requires a lot more features to be implemented before it can be introduced, let alone be remotely useful.
+
 ### Anonymous Sets
 
 It is not necessary to define the Sets upfront with the let keyword. You can use them directly in Universal Quantifiers:
@@ -319,7 +308,37 @@ case Annhilate 9 0 -> Annhilate
 
 but not `case Annhilate 0 0 -> Annhilate`
 
-### Maps
+#### Examples
+
+```
+let Numbers = { 1 2 3 4 5 6 7 8 9 0 }
+
+// Numbers * Numbers is a set including all possible combinations
+// between two Numbers.  We generate a rule for every combination
+// swapping the two.
+for a b in Numbers * Numbers case Swap (a b) (b a) -> Swap
+
+start tape with Swap = [ (9 6) (2 4) (8 0) (0 0) (5 8) & ]
+```
+
+The above machine ran in debug mode prints out:
+
+```
+Swap: (9 6) (2 4) (8 0) (0 0) (5 8) &
+      ^~~~~
+Swap: (6 9) (2 4) (8 0) (0 0) (5 8) &
+            ^~~~~
+Swap: (6 9) (4 2) (8 0) (0 0) (5 8) &
+                  ^~~~~
+Swap: (6 9) (4 2) (0 8) (0 0) (5 8) &
+                        ^~~~~
+Swap: (6 9) (4 2) (0 8) (0 0) (5 8) &
+                              ^~~~~
+Swap: (6 9) (4 2) (0 8) (0 0) (8 5) &
+                                    ^
+```
+
+### **Not Implemented Yet**: Maps
 
 Sometimes it is useful to define mappings from one set to another, or even special mappings from one set to itself.
 
