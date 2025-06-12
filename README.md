@@ -4,11 +4,17 @@ Pinto is an esoteric language based off of [Turing Machines](https://en.wikipedi
 
 Pinto is heavily inspired from Tsoding's [Tula](https://github.com/tsoding/tula).
 
+Pinto is imcomplete and has not fully implemented its feature set.  Also everything is susceptible to change.
+
 ## Motivation and Reasoning
 
 A couple features that inspired me to make Pinto was recursive set definitions and Set restrictions.  With recursive sets, one can easily define countably infinite sets on their own such as Z or ℚ.  Another useful feature I wanted to implement are maps, reminiscent of pure functions mapping elements of one set to another (i.e. f :: a -> b), when combined with exhaustive matching could be really powerful.  I also wanted to add in built in states which would be used for general programming actions such as reading from and writing to stdin and stdout, reading from and writing to other files, etc.  A far off goal would be to implement Pinto in itself.
 
 Another big reason for this project is I wanted to create a project using Haskell. 
+
+## Example Programs
+
+At the moment, only the examples in the simple directory are supported.  The other examples use features which are not yet implemented yet.  As Pinto gets developed more and more, the examples will be useful to look at while there's a lack of documentation.
 
 ## Writing Programs
 
@@ -26,13 +32,13 @@ case <CurrentState> <Read> <Write> <Step> <NextState>
 
 Each rule starts with the keyword case and 5 expressions:
 
-- <CurrentState> - The current state of the Machine,
-- <Read> - What the Machine reads on the Tape,
-- <Write> - What the Machine should write on the Tape,
-- <Step> - Where the Head of the Machine must step (<- left, -> right),
-- <NextState> - What is the next state of the Machine.
+- \<CurrentState> - The current state of the Machine,
+- \<Read> - What the Machine reads on the Tape,
+- \<Write> - What the Machine should write on the Tape,
+- \<Step> - Where the Head of the Machine must step (<- left, -> right),
+- \<NextState> - What is the next state of the Machine.
 
-Note:
+Note: \
     I'm debating adding the stand step since "vanilla" Turing Machines do not have this instruction and it is trivial to implement an isomorphic set of rules and states that replicate this behavior.  Same goes for Arbitrary Left and Arbitrary Right steps, however they're slightly less trivial to implement.  I'd prefer having a standard library with these implementations or building a macro system which wrap over these implementations.
 
  #### Examples
@@ -51,7 +57,10 @@ case Inc 1 0 -> Inc
 start tape with Inc = [ 1 1 0 1 ] + default(0)
 ```
 
-This program by itself doesn't do anything.  In order to see anything, we must use built in States: (PrintHead a), (PrintState a), or (PrintTape start end a).  We can also use a helper State to act as a stand step, or a step where the Head of the Machine does not move.
+Note: \
+    At the moment default(0) does not work.  You can only define very simple tapes of just one list.
+
+**Not Implemented Yet**: This program by itself doesn't do anything.  In order to see anything, we must use built in States: (PrintHead a), (PrintState a), or (PrintTape start end a).  We can also use a helper State to act as a stand step, or a step where the Head of the Machine does not move.
 
 ```
 // When in the state `Inc` and read `0`, replace it with `1` move the head
@@ -81,8 +90,10 @@ Now this would print out:
 0 0 1 1
 ```
 
-Or instead, you could run the original program with a -d Debug flag,
-which would print out
+Note: \
+    Built in functions (soecifically IO) do not technically violate the definition of a Turing Machine.  We can interpet all states as including a world object, so instead of Foo, we'd have (Foo world).  So the "true" version of the Print state would be: `for (string a world) in All * All * World case ((Print a) world) string string -> (Reset (a print_to_world(string, world)))`
+
+Or instead, you could run the original program with a -d Debug flag, which would print out:
 
 ```
 Inc: 1 1 0 1
@@ -95,13 +106,16 @@ Halt: 0 0 1 1
             ^
 ```
 
+Note: \
+    Flags are not supported at the moment, so the debug flag is the current behavior of the interpreter.
+
 You can concatenate different lists using set and function operators.  This lets the user eAsILy define where the head starts using the Here keyword as well as create infinite tapes of patterns.  List Comprehensions can aid in repetitive patterns.  For example, this tape has 16 rows of 16 "-"'s each bordered by an "&", where the Head starts on the third row and column.
 
 ```
-start tape with State = [&] + [- for a in [0..16]] + 
-                        [&] + [- for a in [0..16]] +
-                        [&] + [- -] + Here [- for a in [2..16]] +
-                        [[&] + [- for a in [0..16] for a in [4..16]]] +
+start tape with State = [&] + [- for a in range(0, 16)] + 
+                        [&] + [- for a in range(0, 16)] +
+                        [&] + [- -] + Here [- for a in range(2, 16)] +
+                        [[&] + [- for a in range(0, 16) for a in range(4, 16)]] +
                         [&]
 ```
 
@@ -109,12 +123,14 @@ Or it might be better to write it like this with an initial state of (RightUntil
 
 ```
 start tape with (RightUntil & (RightUntil & (Right 3 State))) = [&] + 
-    Here [[- for a in [0..16]] + [&] for a in 0..16]
+    Here [[- for a in range(0, 16)] + [&] for a in range(0, 16)]
 ```
 
 ### Tuple and S expressions
 
-Normally we can only work with single symbols, a list of characters surrounded by whitespace: "Symbol", "A" or "Print" for example.  However that can be limiting when trying to programmatically generate rules for a turing machine.  It might be useful to make the next state be based off the Head's current value and/or the current State.  We can group symbols together in a Tuple, a group of symbols delimited by parenthesis.  For example:
+Normally we can only work with single symbols, a list of characters surrounded by whitespace: "Symbol", "A" or "Print" for example.  However that can be limiting when trying to programmatically generate rules for a turing machine.  It might be useful to make the next state be based off the Head's current value and/or the current State: We can implement this type of behavior using Tuples/S-expressions combined with Universal Qualification.  
+
+We can group symbols together in a Tuple, a group of symbols delimited by parenthesis.  For example:
 
 ```
 case Swap (1 2) (2 1) -> Swap
@@ -172,6 +188,37 @@ for n in Set {
 }
 ```
 
+**Not Implemeted Yet**: You can also use set builder notation to concisely define several elements.
+
+```
+let Animal = {Cat Dog Fish Turtle}
+let Shrondiger = {(Alive x) for x in Animal} + {(Dead x) for x in Animal}
+```
+
+The above would expand to:
+
+```
+let Animal = {Cat Dog Fish Turtle}
+let Shrondiger = {(Alive Cat) (Alive Dog) (Alive Fish) (Alive Turtle) (Dead Cat) (Dead Dog) (Dead Fish) (Dead Turtle)}
+```
+
+in this case however, using set operations, you could more concisely define Shrondiger as such:
+
+```
+let Animal = {Cat Dog Fish Turtle}
+let AnimalState = {Alive Dead}
+let Shrondiger = AnimalState * Animal
+```
+
+**Not Implemented Yet**: You can also define generic sets.
+
+```
+let Animal = {Cat Dog Fish Turtle}
+let Maybe(A) = {Nothing} + {(Just a) for a in A}
+
+for v in Maybe(Animal) case Tame v Nothing -> (Pet v)
+```
+
 #### Examples
 
 ```
@@ -225,8 +272,20 @@ C: { 1 }
 D: { 4 }
 E: { 1 4 }
 F: { (1 2), (1 3), (1 4), (2 2), (2 3), (2 4), (3 2), (3 3), (3 4) }
-G: { (), (1), (2), (3), (1 2), (1 3), (2 3), (1 2 3) }
+G: { {}, {1}, {2}, {3}, {1 2}, {1 3}, {2 3}, {1 2 3} }
 ```
+
+There is a quality of life feature with Cartesian Products, where the Tuples will flatten.  For example:
+
+```
+let A = {1 2 3}
+let B = {4 5 6}
+let C = {7 8 9}
+
+A * B * C: {(1 4 7) (1 4 8) (1 4 9) (1 5 7) (1 5 8) (1 5 9) (1 6 7) (1 6 8) (1 6 9) (2 4 7) (2 4 8) (2 4 9) (2 5 7) (2 5 8) (2 5 9) (2 6 7) (2 6 8) (2 6 9) (3 4 7) (3 4 8) (3 4 9) (3 5 7) (3 5 8) (3 5 9) (3 6 7) (3 6 8) (3 6 9)}
+```
+
+The shape of each element in A * B * C is (_ _ _) instead of (_ (_ _))
 
 ### Anonymous Sets
 
@@ -290,11 +349,11 @@ for op in Ops case _ op op -> op
 start tape with RotateClockwise = [ (A B C) (C B A) RotateCounterClockwise (A B C) (C B A) Reflect (A B C) (B A C) ]
 ```
 
-We could've theoretically rewritten the statement `for triangle in Triangle case RotateClockwise triangle rotate_clockwise[triangle] -> RotateClockwise` as `for (a b c) in Triangle case RotateClockwise (a b c) (c a b) -> RotateClockwise`, however now everytime we need to rotate a triangle, we can just use the map that we defined.  Or even better we can maps are mathematical objects (think Functors), therefore we can map one set to a set of maps:
+We could've theoretically rewritten the statement `for triangle in Triangle case RotateClockwise triangle rotate_clockwise[triangle] -> RotateClockwise` as `for (a b c) in Triangle case RotateClockwise (a b c) (c a b) -> RotateClockwise`, however now everytime we need to rotate a triangle, we can just use the map that we defined.  Or even better, maps are mathematical objects (think Functors), therefore we can map one set to a set of maps:
 
 ```
 let Point3 = { A B C }
-let Triangle = (Point3 Point3 Point3)
+let Triangle = {(a b c) for (a b c) in Point3 * Point3 * Point3}
 let TriangleOps = { RotateClockwise RotateCounterClockwise Reflect }
 
 map rotate_clockwise :: Triangle -> Triangle {
@@ -325,10 +384,21 @@ start tape with RotateClockwise = [ (A B C) (C B A) RotateCounterClockwise (A B 
 ## TODO
 
 [X] - Lexer \
+[ ] - Comments \
 [X] - Parser \
-[ ] - Sets \
-[ ] - Universal Quantification \
+[ ] - Discard Pattern Support
+[ ] - Many Discard Pattern
+[X] - Sets \
+[ ] - Built In Sets \
+[ ] - Set Builder Notation \
+[ ] - Structs \
+[X] - Universal Quantification \
 [ ] - Maps \
+[ ] - QoL List Syntax/Maps \
 [X] - Interpreter \
+[ ] - Built In Testing Support \
 [X] - Multiple Files \
-[ ] - Standard Library \
+[ ] - Fix TUI \
+[ ] - Built In Rules \
+[ ] - Import System \
+[ ] - Standard Library
