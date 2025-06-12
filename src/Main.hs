@@ -39,10 +39,26 @@ module Main where {
                 Hard err -> ioError $ userError $ show err;
                 Empty -> ioError $ userError "parsing resulted in empty";
             };
+            interpretAST (InterpreterSettings False) ast;
+        };
+        "dinterpret" -> do {
+            tkns <- tokenize rest;
+            ast <- case parse tkns mempty of {
+                Ok ast -> return ast;
+                Soft err -> ioError $ userError $ show err;
+                Hard err -> ioError $ userError $ show err;
+                Empty -> ioError $ userError "parsing resulted in empty";
+            };
             interpretAST (InterpreterSettings True) ast;
         };
-        "help" -> putStrLn "TODO: provide help function";
-        (_:_) -> putStrLn $ cmd ++ " is not a valid command";
+        "help" -> putStrLn 
+            "help       - provides descriptions and instructions on pinto commands\n\
+            \lex        [filepaths] - tokenizes the provided files and prints them out for debug purposes\n\
+            \parse      [filepaths] - parses the provided files and prints out the programs' sets, rules, and tapes for debug purposes\n\
+            \interpret  [filepaths] - interprets the provided files as a program\n\
+            \dinterpret [filepaths] - interprets the provided files as a program, printing out the machine's state, head, and tape at every step\
+            \";
+        (_:_) -> putStrLn $ cmd ++ " is not a valid command.  Try help";
         [] -> putStrLn "unreachable";
     };
     handleArgs [] = putStrLn "Expected command.  Try help";
