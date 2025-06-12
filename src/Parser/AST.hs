@@ -54,7 +54,7 @@ module AST where {
     } deriving(Show);
 
     data Mapping = Mapping {
-        mappingFromPattern :: Pat String,
-        mappingToPattern   :: Pat String
+        mappingFromPattern :: Pat,
+        mappingToPattern   :: Pat
     } deriving(Show);
 }
