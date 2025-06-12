@@ -1,67 +1,22 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-module Rule where {
-    import Direction (Dir);
-    import Pattern (Pat, Pattern (..));
-    import Tape (Tape (..));
-    import qualified Direction as Dir;
-    import Sets (SetDef (..), getPatternKeys, SetShape (..), valueInSet, valueInIdxSet, Sets, Keys);
+module Parser.Rule.UQRule where {
+    import Parser.Sets (Sets, Keys, SetShape (..), valueInSet, valueInIdxSet, getPatternKeys);
+    import Text.Printf (printf);
+    import {-# SOURCE #-} Parser.Rule.Rule (UQRule, UniversalQuantifierRule (..), Rule (..), BasicRule (..));
+    import Parser.Pattern (Pattern(..), Pat);
+    import Parser.Tape (Tape (..));
+    import qualified Parser.Direction as Dir;
     import Data.Maybe (fromMaybe, isJust);
     import Control.Monad (join);
     import Data.Foldable (find);
-    import Text.Printf (printf);
     
-    data Rule = SimpleRule BasicRule | ComplexRule UQRule;
-
-    data BasicRule = BasicRule {
-        ruleCurrentState :: Pat,
-        ruleFromValue    :: Pat,
-        ruleToValue      :: Pat,
-        ruleDir          :: Dir,
-        ruleNextState    :: Pat
-    } deriving(Show);
-
-    type UQRule = UniversalQuantifierRule;
-    data UniversalQuantifierRule = UniversalQuantifierRule {
-        uqPat    :: Pat,
-        uqPatSet :: SetDef,
-        uqRules  :: [Rule]
-    };
-
     showUQRule :: UQRule -> Sets -> String;
-    showUQRule (UniversalQuantifierRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: [%s]}" (show keys) (showRules rules) where {
+    showUQRule (UQRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: [%s]}" (show keys) (showRules rules) where {
         keys = getPatternKeys pat patSet sets;
         showRules [SimpleRule basicRule] = show basicRule;
         showRules ((SimpleRule basicRule):rs) = show basicRule ++ ", " ++ showRules rs;
         showRules [ComplexRule uqRule] = showUQRule uqRule sets;
         showRules ((ComplexRule uqRule):rs) = showUQRule uqRule sets ++ ", " ++ showRules rs;
         showRules [] = "";
-    };
-
-    {-
-     - TODO: maybe have applyRule return a Maybe Tape or a (Bool, Tape)
-     - so that we don't have this two-step process of canApplyRule -> applyRule
-     - If canApplyRule/applyRule are expensive operations, then this
-     - could have 2x improvements. 
-     -}
-
-    applyRule :: Tape -> Sets -> Rule -> Tape;
-    applyRule tape _ (SimpleRule basicRule) = applyBasicRule tape basicRule;
-    applyRule tape sets (ComplexRule uqRule) = applyUQRule tape sets uqRule;
-
-    -- TODO: add support for nested Discards
-    applyBasicRule :: Tape -> BasicRule -> Tape;
-    applyBasicRule tape rule = Tape tName rNextState newTValues newTIdx where {
-        (Tape tName _ tValues tIdx) = tape;
-        (BasicRule _ rFromValue rToValue rDir rNextState) = rule;
-        newTValues = case (rFromValue, rToValue) of {
-            (Discard, Discard) -> tValues;
-            (from, Discard) -> take tIdx tValues ++ from : drop (tIdx + 1) tValues;
-            (_, to) -> take tIdx tValues ++ to : drop (tIdx + 1) tValues;
-        };
-        newTIdx = case rDir of {
-            Dir.L -> tIdx - 1;
-            Dir.R -> tIdx + 1;
-        };
     };
 
     type PatKeys = [(String, Pat)];
@@ -72,7 +27,7 @@ module Rule where {
         | otherwise = error "Could not apply UQ Rule"
     where {
         (Tape tName tState tValues tIdx) = tape;
-        (UniversalQuantifierRule rPat rPatSet rRules) = rule;
+        (UQRule rPat rPatSet rRules) = rule;
         tValue = tValues !! tIdx;
         keys = fromMaybe [] (getPatternKeys rPat rPatSet sets);
 
@@ -82,8 +37,8 @@ module Rule where {
         apply :: Keys -> Rule -> Maybe Tape;
         apply ks (SimpleRule basicRule) = do {
             ruleKeys <- join $ combinePatKeys 
-                <$> getPatKeys ks rCurrState' tState
-                <*> getPatKeys ks rFromValue' tValue;
+                <$> getPatKeys sets ks rCurrState' tState
+                <*> getPatKeys sets ks rFromValue' tValue;
             let {
                 tValue' = constructNewValue ruleKeys 
                     (Just tValue) (Just rFromValue') rToValue';
@@ -100,7 +55,7 @@ module Rule where {
             (BasicRule rCurrState' rFromValue' rToValue' rDir' rNextState') = basicRule;
         };
         apply ks (ComplexRule uqRule) = tryApply ks' rRules' where {
-            (UniversalQuantifierRule rPat' rPatSet' rRules') = uqRule;
+            (UQRule rPat' rPatSet' rRules') = uqRule;
             ks' = ks ++ fromMaybe [] (getPatternKeys rPat' rPatSet' sets)
         };
 
@@ -168,39 +123,6 @@ module Rule where {
             headMaybe (x:_) = Just x;
         };
 
-        getPatKeys :: Keys -> Pat -> Pat -> Maybe PatKeys;
-        getPatKeys ks r@(Value key) t 
-            | r == t                     = Just []
-            | or (inShape t <$> uqShape) = Just [(key, t)]
-            | otherwise = Nothing 
-        where {
-            uqShape = snd <$> findByKey fst key ks;
-            inShape v (SetRef shp) = valueInSet sets v shp;
-            inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
-            --Maybe rewrite this.  I kinda hate converting the integer to a string
-            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp; 
-            inShape _ _ = False;
-        };
-        getPatKeys _ (Num k) (Num t) = if k == t then Just [] else Nothing;
-        getPatKeys ks (Tuple uqPats) (Tuple tPats)
-            | length uqPats == length tPats = 
-                foldl combine (Just []) $ uncurry (getPatKeys ks) <$> zip uqPats tPats
-            | otherwise = Nothing
-        where {
-            combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
-            combine a b = (++) <$> a <*> b;
-        };
-        getPatKeys ks (List uqPats) (List tPats)
-            | length uqPats == length tPats = 
-                foldl combine (Just []) $ uncurry (getPatKeys ks) <$> zip uqPats tPats
-            | otherwise = Nothing
-        where {
-            combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
-            combine a b = (++) <$> a <*> b;
-        };
-        getPatKeys _ Discard _ = Just [];
-        getPatKeys _ _ _ = Nothing;
-
         combinePatKeys :: PatKeys -> PatKeys -> Maybe PatKeys;
         combinePatKeys (a:as) bs 
             | Just (_, bPat) <- b, aPat == bPat = combinePatKeys as bs
@@ -219,26 +141,10 @@ module Rule where {
             | otherwise = findByKey f k xs;
     };
 
-    canApplyRule :: Tape -> Sets -> Rule -> Bool;
-    canApplyRule tape _ (SimpleRule basicRule) = canApplyBasicRule tape basicRule;
-    canApplyRule tape sets (ComplexRule uqRule) = canApplyUQRule tape [] sets uqRule;
-
-    canApplyBasicRule :: Tape -> BasicRule -> Bool;
-    canApplyBasicRule tape rule = 
-        matchPat rCurrState tState && 
-        matchPat rFromValue tValue 
-    where {
-        (Tape _ tState tValues tIdx) = tape;
-        (BasicRule rCurrState rFromValue _ _ _) = rule;
-        tValue = tValues !! tIdx;
-        matchPat Discard _ = True;
-        matchPat r t = r == t;
-    };
-
     canApplyUQRule :: Tape -> Keys -> Sets -> UQRule -> Bool;
     canApplyUQRule tape keys sets rule = or $ fmap canApply rRules where {
         (Tape _ tState tValues tIdx) = tape;
-        (UniversalQuantifierRule rPat rPatSet rRules) = rule;
+        (UQRule rPat rPatSet rRules) = rule;
         tValue = tValues !! tIdx;
         keys' = keys ++ fromMaybe [] (getPatternKeys rPat rPatSet sets);
 
@@ -248,50 +154,10 @@ module Rule where {
             <*> valueKeys
         where {
             (BasicRule rCurrState' rFromValue' _ _ _) = basicRule;
-            stateKeys = getPatKeys rCurrState' tState;
-            valueKeys = getPatKeys rFromValue' tValue;
+            stateKeys = getPatKeys sets keys' rCurrState' tState;
+            valueKeys = getPatKeys sets keys' rFromValue' tValue;
         };
         canApply (ComplexRule uqRule) = canApplyUQRule tape keys' sets uqRule;
-
-        getPatKeys :: Pat -> Pat -> Maybe PatKeys;
-        getPatKeys r@(Value key) t 
-            | r == t                     = Just []
-            | or (inShape t <$> uqShape) = Just [(key, t)]
-            --- | otherwise = trace ("wtf " ++ show keys' ++ " " ++ show key ++ " " ++ show (findByKey fst key keys')) Nothing 
-            | otherwise = Nothing
-        where {
-            uqShape = snd <$> findByKey fst key keys';
-            inShape v (SetRef shp) = valueInSet sets v shp;
-            inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
-            --Maybe rewrite this.  I kinda hate converting the integer to a string
-            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp;
-            inShape _ _ = False;
-
-            findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
-            findByKey _ _ [] = Nothing;
-            findByKey f k (x:xs)
-                | f x == k  = Just x
-                | otherwise = findByKey f k xs;
-        };
-        getPatKeys (Num _) (Num _) = Just [];
-        getPatKeys (Tuple uqPats) (Tuple tPats)
-            | length uqPats == length tPats =
-                foldl combine (Just []) $ uncurry getPatKeys <$> zip uqPats tPats
-            | otherwise = Nothing
-        where {
-            combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
-            combine a b = (++) <$> a <*> b;
-        };
-        getPatKeys (List uqPats) (List tPats)
-            | length uqPats == length tPats = 
-                foldl combine (Just []) $ uncurry getPatKeys <$> zip uqPats tPats
-            | otherwise = Nothing
-        where {
-            combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
-            combine a b = (++) <$> a <*> b;
-        };
-        getPatKeys Discard _ = Just [];
-        getPatKeys _ _ = Nothing;
 
         matchPatKeys :: PatKeys -> PatKeys -> Bool;
         matchPatKeys (a:as) bs 
@@ -309,4 +175,43 @@ module Rule where {
         };
         matchPatKeys [] _ = True;
     };
+
+    getPatKeys :: Sets -> Keys -> Pat -> Pat -> Maybe PatKeys;
+    getPatKeys sets ks r@(Value key) t 
+        | r == t                     = Just []
+        | or (inShape t <$> uqShape) = Just [(key, t)]
+        | otherwise = Nothing 
+    where {
+        uqShape = snd <$> findByKey fst key ks;
+        inShape v (SetRef shp) = valueInSet sets v shp;
+        inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
+        --Maybe rewrite this.  I kinda hate converting the integer to a string
+        inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp; 
+        inShape _ _ = False;
+
+        findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
+        findByKey _ _ [] = Nothing;
+        findByKey f k (x:xs)
+            | f x == k  = Just x
+            | otherwise = findByKey f k xs;
+    };
+    getPatKeys _ _ (Num k) (Num t) = if k == t then Just [] else Nothing;
+    getPatKeys sets ks (Tuple uqPats) (Tuple tPats)
+        | length uqPats == length tPats = 
+            foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
+        | otherwise = Nothing
+    where {
+        combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
+        combine a b = (++) <$> a <*> b;
+    };
+    getPatKeys sets ks (List uqPats) (List tPats)
+        | length uqPats == length tPats = 
+            foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
+        | otherwise = Nothing
+    where {
+        combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
+        combine a b = (++) <$> a <*> b;
+    };
+    getPatKeys _ _ Discard _ = Just [];
+    getPatKeys _ _ _ _ = Nothing;
 }

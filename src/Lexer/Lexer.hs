@@ -1,8 +1,8 @@
-module Lexer where {
+module Lexer.Lexer where {
     import Control.Applicative ( Alternative((<|>), empty) );
     import Data.Char ( isSpace, isDigit, ord, toLower );
 
-    import Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
+    import Lexer.Tokens (Token(..), Keyword(..), Tkn, Arrow (..), BinaryOperation (..), UnaryOperation (Power));
     import Data.Foldable (asum);
     import Data.Bits (Bits(shiftL));
     import Text.Read (readMaybe);
@@ -365,7 +365,7 @@ module Lexer where {
             };
             return $ tkns ++ [tkn, eof];
         } else do {
-            Lexer.lex input' (tkns ++ [tkn]);
+            Lexer.Lexer.lex input' (tkns ++ [tkn]);
         };
     };
 }

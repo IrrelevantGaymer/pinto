@@ -1,12 +1,12 @@
-module Interpreter where {
-    import AST (AST (..));
+module Interpreter.Interpreter where {
+    import Parser.AST (AST (..));
     import Text.Printf (printf);
     import Control.Monad (when);
     import Data.List (find);
-    import Rule (Rule (..), applyRule, canApplyRule);
-    import Pattern (Pat);
-    import Tape (Tape(..));
-    import Sets (Sets);
+    import Parser.Rule.Rule (Rule (..), applyRule, canApplyRule);
+    import Parser.Pattern (Pat);
+    import Parser.Tape (Tape(..));
+    import Parser.Sets (Sets);
     
     newtype InterpreterSettings = InterpreterSettings {
         interpreterSettingsDebug :: Bool

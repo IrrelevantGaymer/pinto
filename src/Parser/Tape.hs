@@ -1,5 +1,5 @@
-module Tape where {
-    import Pattern (Pat);
+module Parser.Tape where {
+    import Parser.Pattern (Pat);
 
     data Tape = Tape {
         tapeName   :: String,

@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Pattern where {
+module Parser.Pattern where {
     type Pat = Pattern;
     data Pattern = Value String
         | Num   Int

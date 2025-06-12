@@ -1,9 +1,10 @@
-module AST where {
-    import Rule (Rule (..), showUQRule);
-    import Pattern (Pat);
-    import Tape (Tape);
-    import Sets (SetDef, Sets);
+module Parser.AST where {
+    import Parser.Pattern (Pat);
+    import Parser.Tape (Tape);
+    import Parser.Sets (SetDef, Sets);
     import Text.Printf (printf);
+    import Parser.Rule.Rule (Rule(..));
+    import Parser.Rule.UQRule (showUQRule);
     
     data AST = AST {
         astSets  :: Sets,

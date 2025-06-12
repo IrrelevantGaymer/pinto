@@ -1,6 +1,6 @@
-module ParserError where {
-    import Lexer ( Atom );
-    import Tokens ( Tkn );
+module Parser.ParserError where {
+    import Lexer.Lexer ( Atom );
+    import Lexer.Tokens ( Tkn );
 
     data ParserError = 
         UnexpectedToken { 

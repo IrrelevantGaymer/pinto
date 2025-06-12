@@ -1,4 +1,4 @@
-module Tokens where {
+module Lexer.Tokens where {
     type Tkn = Token;
     data Token = OpenBrace             | CloseBrace           | 
                  OpenParen             | CloseParen           |

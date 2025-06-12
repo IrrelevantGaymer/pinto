@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
-module Sets where {
-    import Pattern (Pat, getShape, Pattern (..), PatShape, PatternShape (..));
+module Parser.Sets where {
+    import Parser.Pattern (Pat, getShape, Pattern (..), PatShape, PatternShape (..));
     import Text.Printf (printf);
 
     type UnOp = UnarySetOperation;

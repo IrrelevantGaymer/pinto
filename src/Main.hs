@@ -1,11 +1,12 @@
 module Main where {
     import System.Environment ( getArgs );
 
-    import Lexer ( atomize, lex, FileName, Atom );
-    import Tokens ( Tkn );
-    import Parser (parse);
-    import Interpreter (InterpreterSettings (..), interpretAST);
+    import Lexer.Lexer ( atomize, FileName, Atom );
+    import Lexer.Tokens ( Tkn );
+    import Parser.Parser (parse);
+    import Interpreter.Interpreter (InterpreterSettings (..), interpretAST);
     import FullResult (FullResult(..));
+    import qualified Lexer.Lexer as Lexer;
     
     main :: IO();
     main = do {

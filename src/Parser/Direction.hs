@@ -1,4 +1,4 @@
-module Direction where {
+module Parser.Direction where {
     type Dir = Direction;
     {-
     - In consideration: Implement a Stay Direction.

@@ -1,30 +1,32 @@
-module Parser where {
+module Parser.Parser where {
     import Control.Applicative ( Alternative(empty), Alternative(many) );
 
-    import Tokens (
+    import Lexer.Tokens (
         Tkn,
         Token(..),
-        Arrow (..),
-        Keyword (..), BinaryOperation (..), UnaryOperation (Power)
+        Keyword (..)
     );
-    import Lexer ( Atom(Atom, atomValue) );
+    import Lexer.Lexer ( Atom(Atom, atomValue) );
 
-    import ParserError ( ParserError(..), ExpectForCase (CurrentState, FromValue, ToValue, CaseDir, NextState), ExpectForUQ (..), ExpectForSetDef (..) );
-    import AST (
+    import Parser.ParserError ( ParserError(..), ExpectForCase (CurrentState, FromValue, ToValue, CaseDir, NextState), ExpectForUQ (..), ExpectForSetDef (..) );
+    import Parser.AST (
         Node (..),
         AST (..)
     );
     import GHC.Base (Alternative((<|>)));
-    import Direction (Dir);
-    import qualified Direction as Dir;
-    import Pattern (Pat, Pattern (..));
-    import Rule (Rule(..), BasicRule (..), UQRule, UniversalQuantifierRule (UniversalQuantifierRule));
-    import Tape (Tape(..));
-    import Sets (BinOp, UnOp, SetDef (..), BinarySetOperation (..), UnarySetOperation (..), getPrecedence);
+    import Parser.Direction (Dir);
+    import qualified Parser.Direction as Dir;
+    import Parser.Pattern (Pat, Pattern (..));
+    import Parser.Rule.Rule (Rule(..), BasicRule (..), UQRule, UniversalQuantifierRule (UQRule));
+    import Parser.Tape (Tape(..));
+    import Parser.Sets (BinOp, UnOp, SetDef (..), getPrecedence);
     import Text.Printf (printf);
     import FullResult (FullResult (..), injectMapHard, FullFunctor (..), FullMonad (..), FullApplicative (..), (<|&|>), (<:&:>));
     import Data.Foldable (asum);
-
+    import qualified Lexer.Tokens as Tokens;
+    import qualified Parser.Sets as Sets;
+    import qualified Parser.Pattern as Pattern;
+    
     newtype Parser s h a = Parser {
         runParser :: [Atom Tkn] -> FullResult s h ([Atom Tkn], a)
     };
@@ -165,7 +167,7 @@ module Parser where {
 
         -- TODO type check uqPat
         uqRules <- block startForRule <|> singleton <$> single;
-        return $ UniversalQuantifierRule uqPat uqPatSet uqRules;
+        return $ UQRule uqPat uqPatSet uqRules;
     } where {
         block startForRule = do {
             open <- nodeTkn OpenBrace;
