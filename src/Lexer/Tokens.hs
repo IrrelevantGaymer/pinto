@@ -4,7 +4,8 @@ module Tokens where {
                  OpenParen             | CloseParen           |
                  OpenBracket           | CloseBracket         |
                  Keyword Kwrd          | Arrow Arrow          |
-                 Word String           | StringLiteral String |
+                 Word String           | Num Int              |
+                 StringLiteral String  |
                  Assign                | Invalid              |
                  BinaryOperation BinOp | UnaryOperation UnOp  |
                  EndOfFile             deriving(Show, Eq);

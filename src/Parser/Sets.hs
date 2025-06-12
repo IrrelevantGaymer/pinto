@@ -58,6 +58,7 @@ module Sets where {
         valueIn (idx:idcs) k (Tuple vs) = or $ valueIn idcs k <$> vs !? idx;
         valueIn (idx:idcs) k (List vs) = or $ valueIn idcs k <$> vs !? idx;
         valueIn [] k (Value v) = k == v;
+        valueIn [] k (Num v) = k == show v;
         valueIn _ _ _ = False;
 
         infixl 9 !?;
@@ -106,6 +107,7 @@ module Sets where {
 
     getPatternKeys :: Pat -> SetDef -> Sets -> Maybe Keys;
     getPatternKeys (Value pat) def _ = Just [(pat, SetRef def)];
+    getPatternKeys (Num _) _ _ = error "Cannot use an integer for Universal Qualification identifiers";
     getPatternKeys (List _) _ _ = undefined;
     getPatternKeys (Tuple pats) set@(BinOpSet CartesianProduct _ _) sets = do {
         (rest, keys) <- getKey pats set;

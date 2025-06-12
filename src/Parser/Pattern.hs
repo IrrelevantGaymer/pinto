@@ -3,6 +3,7 @@
 module Pattern where {
     type Pat = Pattern;
     data Pattern = Value String
+        | Num   Int
         | List  [Pattern]
         | Tuple [Pattern]
         | Discard
@@ -10,6 +11,7 @@ module Pattern where {
 
     instance Show Pattern where {
         show (Value value) = value;
+        show (Num num) = show num;
         show (List values) = "[" ++ s values ++ "]" where {
             s  (x:xs) = show x ++ s2 xs;
             s  [] = "";

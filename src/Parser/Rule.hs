@@ -116,9 +116,13 @@ module Rule where {
         where {
             kLookup = snd <$> findByKey fst v rKeys;
         };
+        constructNewValue _ _ _ (Num v) = Num v;
         constructNewValue rKeys (Just (Tuple ts)) (Just (Tuple fs)) (Tuple vs) = 
             Tuple $ constructNewValues rKeys ts fs vs;
         constructNewValue rKeys (Just (Value _)) (Just (Value _)) (Tuple vs) = 
+            Tuple $ constructNewValues rKeys [] [] vs;
+        --This feels weird
+        constructNewValue rKeys (Just (Num _)) (Just (Num _)) (Tuple vs) = 
             Tuple $ constructNewValues rKeys [] [] vs;
         constructNewValue rKeys Nothing Nothing (Tuple vs) = 
             Tuple $ constructNewValues rKeys [] [] vs;
@@ -133,6 +137,9 @@ module Rule where {
         constructNewValue rKeys (Just (List ts)) (Just (List fs)) (List vs) = 
             List $ constructNewValues rKeys ts fs vs;
         constructNewValue rKeys (Just (Value _)) (Just (Value _)) (List vs) = 
+            List $ constructNewValues rKeys [] [] vs;
+        --This feels weird
+        constructNewValue rKeys (Just (Num _)) (Just (Num _)) (List vs) = 
             List $ constructNewValues rKeys [] [] vs;
         constructNewValue rKeys Nothing Nothing (List vs) = 
             List $ constructNewValues rKeys [] [] vs;
@@ -170,8 +177,11 @@ module Rule where {
             uqShape = snd <$> findByKey fst key ks;
             inShape v (SetRef shp) = valueInSet sets v shp;
             inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
+            --Maybe rewrite this.  I kinda hate converting the integer to a string
+            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp; 
             inShape _ _ = False;
         };
+        getPatKeys _ (Num k) (Num t) = if k == t then Just [] else Nothing;
         getPatKeys ks (Tuple uqPats) (Tuple tPats)
             | length uqPats == length tPats = 
                 foldl combine (Just []) $ uncurry (getPatKeys ks) <$> zip uqPats tPats
@@ -253,6 +263,8 @@ module Rule where {
             uqShape = snd <$> findByKey fst key keys';
             inShape v (SetRef shp) = valueInSet sets v shp;
             inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
+            --Maybe rewrite this.  I kinda hate converting the integer to a string
+            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp;
             inShape _ _ = False;
 
             findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
@@ -261,6 +273,7 @@ module Rule where {
                 | f x == k  = Just x
                 | otherwise = findByKey f k xs;
         };
+        getPatKeys (Num _) (Num _) = Just [];
         getPatKeys (Tuple uqPats) (Tuple tPats)
             | length uqPats == length tPats =
                 foldl combine (Just []) $ uncurry getPatKeys <$> zip uqPats tPats
