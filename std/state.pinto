@@ -1,1 +1,3 @@
 for (a b) in All * All case (Reset a) b b <- a
+for (a b) in All * All case (SwapHead a) b a -> (Reset b)
+for (a b c) in All * All * All case (Inject a b) c a -> (Reset b)
