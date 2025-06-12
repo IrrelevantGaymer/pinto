@@ -1,4 +1,4 @@
-case Inc 0 1 -> (PrintTape Halt 1 4)
+case Inc 0 1 -> (Print' "Halt: " (PrintTape 0 3 Halt))
 case Inc 1 0 -> Inc
 
-start tape with (PrintTape Inc 1 4) = [ 1 1 0 1 ]
+start tape with (Print' "Inc: " (PrintTape 0 3 Inc)) = [ 1 1 0 1 0 ]
