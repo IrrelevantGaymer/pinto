@@ -26,15 +26,6 @@ module Parser.Rule.Rule where {
     };
 
     {-
-     - Print = for (a b) in All * All case (Print a) b b -> (Reset a)
-     - Read  = for (a b c) in All * All * All case (Read  a) b c -> (Reset a)
-     -       note: Read is weird/special because it gets the new tape value
-     -             from the outside world
-     - GetHeadAddr = for (a b c) in All * All * Int case (GetHeadAddr a) b c -> (Reset a) 
-     -}
-    data BuiltInRule = Print | Read | GetHeadAddr;
-
-    {-
      - TODO: maybe have applyRule return a Maybe Tape or a (Bool, Tape)
      - so that we don't have this two-step process of canApplyRule -> applyRule
      - If canApplyRule/applyRule are expensive operations, then this
@@ -47,4 +38,5 @@ module Parser.Rule.Rule where {
     canApplyRule :: Tape -> Sets -> Rule -> Bool;
     canApplyRule tape _ (SimpleRule basicRule) = canApplyBasicRule tape basicRule;
     canApplyRule tape sets (ComplexRule uqRule) = canApplyUQRule tape [] sets uqRule;
+
 }

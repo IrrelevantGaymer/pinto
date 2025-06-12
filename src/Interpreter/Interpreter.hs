@@ -7,6 +7,7 @@ module Interpreter.Interpreter where {
     import Parser.Pattern (Pat);
     import Parser.Tape (Tape(..));
     import Parser.Sets (Sets);
+    import Parser.Rule.BuiltInRule (canApplyBuiltInRule, builtInRules, applyBuiltInRule);
     
     newtype InterpreterSettings = InterpreterSettings {
         interpreterSettingsDebug :: Bool
@@ -25,11 +26,17 @@ module Interpreter.Interpreter where {
             printTape tape;
         let {
             rule = find (canApplyRule tape sets) rules;
+            builtInRule = find (canApplyBuiltInRule tape) builtInRules;
         };
-        case applyRule tape sets <$> rule of {
-            Just newTape -> interpretTape settings newTape sets rules;
-            Nothing -> return ();
-        };
+        apply rule builtInRule;
+    } where {
+        apply dRule bRule 
+            | Just tape' <- applyRule tape sets <$> dRule = interpretTape settings tape' sets rules
+            | Just tapeM <- applyBuiltInRule tape <$> bRule = do {
+                tape' <- tapeM;
+                interpretTape settings tape' sets rules;
+            }
+            | otherwise = return ();
     };
 
     printTape :: Tape -> IO ();

@@ -25,13 +25,4 @@ module Parser.Rule.Rule where {
         uqPatSet :: SetDef,
         uqRules  :: [Rule]
     };
-
-    {-
-     - Print = for (a b) in All * All case (Print a) b b -> (Reset a)
-     - Read  = for (a b c) in All * All * All case (Read  a) b c -> (Reset a)
-     -       note: Read is weird/special because it gets the new tape value
-     -             from the outside world
-     - GetHeadAddr = for (a b c) in All * All * Int case (GetHeadAddr a) b c -> (Reset a) 
-     -}
-    data BuiltInRule = Print | Read | GetHeadAddr;
 }
