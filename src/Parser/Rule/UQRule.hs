@@ -77,18 +77,8 @@ module Parser.Rule.UQRule where {
         constructNewValue rKeys (Just (Value _)) (Just (Value _)) (Tuple vs) = 
             Tuple $ constructNewValues rKeys [] [] vs;
         --This feels weird
-        constructNewValue rKeys (Just (Num _)) (Just (Num _)) (Tuple vs) = 
+        constructNewValue rKeys _ _ (Tuple vs) = 
             Tuple $ constructNewValues rKeys [] [] vs;
-        constructNewValue rKeys Nothing Nothing (Tuple vs) = 
-            Tuple $ constructNewValues rKeys [] [] vs;
-        constructNewValue rKeys t f (Tuple vs) = 
-            error (
-                "Unmatched tape value and rule from value:" ++ 
-                "\n    rule keys: " ++ show rKeys ++
-                "\n    from tape: " ++ show t     ++
-                "\n    from rule: " ++ show f     ++
-                "\n    constructing from: (Tuple " ++ show vs ++ ")"
-            );
         constructNewValue rKeys (Just (List ts)) (Just (List fs)) (List vs) = 
             List $ constructNewValues rKeys ts fs vs;
         constructNewValue rKeys (Just (Value _)) (Just (Value _)) (List vs) = 

@@ -38,6 +38,11 @@ module Parser.ParserError where {
             setDefExpect :: ExpectForSetDef,
             received     :: Atom Tkn
         } |
+        ExpectedForSetBuilder {
+            startTkn         :: Atom Tkn,
+            setBuilderExpect :: ExpectForSetBuilder,
+            received         :: Atom Tkn
+        } |
         CouldNotParseSet {
             startSet :: Atom Tkn,
             received :: Atom Tkn
@@ -48,7 +53,7 @@ module Parser.ParserError where {
         CouldNotParsePattern {
             received :: Atom Tkn
         } |
-        ExpectedPatInBasicSet {
+        ExpectedPat {
             startSet :: Atom Tkn,
             received :: Atom Tkn
         } |
@@ -67,6 +72,7 @@ module Parser.ParserError where {
     deriving (Show);
 
     data ExpectForCase = CurrentState | FromValue | ToValue | CaseDir | NextState deriving(Show); 
-    data ExpectForUQ = Pat | ForIn | PatSet | Rules deriving(Show);
-    data ExpectForSetDef = Name | SetDefAssign deriving(Show)
+    data ExpectForUQ = UQPat | UQIn | UQPatSet | Rules deriving(Show);
+    data ExpectForSetDef = Name | SetDefAssign deriving(Show);
+    data ExpectForSetBuilder = BuildPat | BuildFor | BuildMatch | BuildIn | BuildPatSet deriving(Show);
 }

@@ -8,7 +8,7 @@ module Parser.Parser where {
     );
     import Lexer.Lexer ( Atom(Atom, atomValue) );
 
-    import Parser.ParserError ( ParserError(..), ExpectForCase (CurrentState, FromValue, ToValue, CaseDir, NextState), ExpectForUQ (..), ExpectForSetDef (..) );
+    import Parser.ParserError ( ParserError(..), ExpectForCase (CurrentState, FromValue, ToValue, CaseDir, NextState), ExpectForUQ (..), ExpectForSetDef (..), ExpectForSetBuilder (..) );;
     import Parser.AST (
         Node (..),
         AST (..)
@@ -170,11 +170,11 @@ module Parser.Parser where {
     nodeUQRule :: Parser ParserError ParserError UQRule;
     nodeUQRule = do {
         startForRule <- nodeTkn $ Keyword For;
-        uqPat        <- atomValue <$> nodePat <|=:$ ExpectedForUQ startForRule Pat    . received;
-        _            <- nodeTkn (Keyword In)  <|=:$ ExpectedForUQ startForRule ForIn  . received;
-        uqPatSet     <- atomValue <$> nodeSet <|=:$ ExpectedForUQ startForRule PatSet . received;
+        uqPat        <- atomValue <$> nodePat <|=:$ ExpectedForUQ startForRule UQPat    . received;
+        _            <- nodeTkn (Keyword In)  <|=:$ ExpectedForUQ startForRule UQIn  . received;
+        uqPatSet     <- atomValue <$> nodeSet <|=:$ ExpectedForUQ startForRule UQPatSet . received;
 
-        -- TODO type check uqPat
+        -- TODO type check uqPat<:
         uqRules <- block startForRule <|> singleton <$> single;
         return $ UQRule uqPat uqPatSet uqRules;
     } where {
@@ -232,7 +232,7 @@ module Parser.Parser where {
 
     nodeAtomSet :: Parser ParserError ParserError (Atom SetDef);
     nodeAtomSet = do {
-        set <- nodeGroupSet <|> nodeSetWithUnary <|> nodeBasicSet <|> nodeWordSet;
+        set <- nodeGroupSet <|> nodeSetWithUnary <|> nodeBuilderSet <|> nodeBasicSet <|> nodeWordSet;
         return $ Id <$> set;
     } where {
         nodeWordSet = do {
@@ -259,10 +259,22 @@ module Parser.Parser where {
     } where {
         setPat = do {
             open <- nodeTkn OpenBrace;
-            pats <- many nodePat       <|=:$ ExpectedPatInBasicSet open    . received;
-            _    <- nodeTkn CloseBrace <|=:$ ExpectedClose open CloseBrace . received;
+            pats <- many nodePat       <:&:> ExpectedPat open              . received;
+            _    <- nodeTkn CloseBrace <:&:> ExpectedClose open CloseBrace . received;
             return pats;
         };
+    };
+
+    nodeBuilderSet :: Parser ParserError ParserError (Atom SetDef);
+    nodeBuilderSet = do {
+        open  <- nodeTkn OpenBrace;
+        pat   <- nodePat               <:&:> ExpectedForSetBuilder open BuildPat    . received;
+        _     <- nodeTkn (Keyword For) <:&:> ExpectedForSetBuilder open BuildFor    . received;
+        match <- nodePat               <|=:$ ExpectedForSetBuilder open BuildMatch  . received;
+        _     <- nodeTkn (Keyword In)  <|=:$ ExpectedForSetBuilder open BuildIn     . received;
+        set   <- nodeSet               <|=:$ ExpectedForSetBuilder open BuildPatSet . received;
+        _     <- nodeTkn CloseBrace    <|=:$ ExpectedClose         open CloseBrace  . received;
+        return $ SetBuilder <$> pat <*> match <*> set;
     };
 
     nodeBinaryOp :: Parser ParserError ParserError (Atom BinOp);

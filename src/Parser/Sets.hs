@@ -15,7 +15,12 @@ module Parser.Sets where {
     getPrecedence Difference       = 2;
 
     data SetDef = Set ![Pat] |
-        Word String |
+        SetBuilder {
+            buildPat    :: !Pat,
+            buildMatch  :: !Pat,
+            buildSetDef :: !SetDef
+        } | 
+        Word !String |
         UnOpSet !UnOp !SetDef |
         BinOpSet !BinOp !SetDef !SetDef |
         Id !SetDef deriving(Show);
@@ -74,6 +79,39 @@ module Parser.Sets where {
             | g x == k  = Just x
             | otherwise = findByKey g k xs
     };
+    valueInSet sets value (SetBuilder pat match set) = or $ do {
+        keys <- bKeys;
+        return $ matchPat sets keys pat value;
+    } where {
+        bKeys = getPatternKeys match set sets;
+
+        matchPat :: Sets -> Keys -> Pat -> Pat -> Bool;
+        matchPat ss ks m@(Value key) t = m == t || or (inShape t <$> mShape) where {
+            mShape = snd <$> findByKey fst key ks;
+            inShape v (SetRef shp) = valueInSet ss v shp;
+            inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet ss i v shp;
+            --Maybe rewrite this.  I kinda hate converting the integer to a string
+            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet ss i (show v) shp; 
+            inShape _ _ = False;
+
+            findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
+            findByKey _ _ [] = Nothing;
+            findByKey f k (x:xs)
+                | f x == k  = Just x
+                | otherwise = findByKey f k xs;
+        };
+        matchPat _ _ (Num k) (Num t) = k == t;
+        matchPat ss ks (Tuple mPats) (Tuple tPats)
+            | length mPats == length tPats = 
+                and $ uncurry (matchPat ss ks) <$> zip mPats tPats
+            | otherwise = False;
+        matchPat ss ks (List mPats) (List tPats)
+            | length mPats == length tPats = 
+                and $ uncurry (matchPat ss ks) <$> zip mPats tPats
+            | otherwise = False;
+        matchPat _ _ Discard _ = True;
+        matchPat _ _ _ _ = False;
+    };
     valueInSet _ _ (UnOpSet PowerSet _) = undefined;
     valueInSet sets value (BinOpSet Union setA setB) =
         valueInSet sets value setA || valueInSet sets value setB;
@@ -126,6 +164,37 @@ module Parser.Sets where {
             | g x == k  = Just x
             | otherwise = findByKey g k xs
     };
+    valueInIdxSet sets idcs value (SetBuilder pat match set) = or $ do {
+        keys <- bKeys;
+        return $ valueIn sets keys idcs value pat;
+    } where {
+        bKeys = getPatternKeys match set sets;
+
+        valueIn :: Sets -> Keys -> [Int] -> String -> Pat -> Bool;
+        valueIn ss ks (i:is) k (Tuple vs) = or $ valueIn ss ks is k <$> vs !? i;
+        valueIn ss ks (i:is) k (List vs) = or $ valueIn ss ks is k <$> vs !? i;
+        valueIn ss ks [] key (Value t) = key == t || or (inShape t <$> mShape) where {
+            mShape = snd <$> findByKey fst key ks;
+            inShape v (SetRef shp) = valueInSet ss (Value v) shp;
+            inShape v (IdxInSetRef i shp) = valueInIdxSet ss i v shp;
+
+            findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
+            findByKey _ _ [] = Nothing;
+            findByKey f k (x:xs)
+                | f x == k  = Just x
+                | otherwise = findByKey f k xs;
+        };
+        valueIn _ _ [] key (Num t) = key == show t;
+        valueIn _ _ _ _ _ = undefined;
+
+        infixl 9 !?;
+        (!?) :: [a] -> Int -> Maybe a;
+        []     !? _     = Nothing;
+        (x:_)  !? 0     = Just x;
+        (_:xs) !? idx
+            | idx > 0   = xs !? (idx - 1)
+            | otherwise = Nothing;
+    };
     valueInIdxSet _ _ _ (UnOpSet PowerSet _) = undefined;
     valueInIdxSet sets idcs value (BinOpSet Union setA setB) =
         valueInIdxSet sets idcs value setA || valueInIdxSet sets idcs value setB;
@@ -141,6 +210,19 @@ module Parser.Sets where {
 
     getPatternShape :: SetDef -> Sets -> Maybe PatShape;
     getPatternShape (Set pats) _ = Just $ mconcat $ fmap getShape pats;
+    getPatternShape (Word setLookup) sets
+        | Just setDef <- set = getPatternShape setDef sets
+        | Nothing     <- set = Nothing
+    where {
+        set = snd <$> findByKey fst setLookup sets;
+        findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
+        findByKey _ _ [] = Nothing;
+        findByKey f k (x:xs)
+            | f x == k  = Just x
+            | otherwise = findByKey f k xs
+    };
+    -- TODO: add checking if the set builder is properly formatted
+    getPatternShape (SetBuilder pat _ _) _ = Just $ getShape pat;
     getPatternShape (UnOpSet PowerSet _) _ = Just V;
     getPatternShape (BinOpSet Union setA setB) sets = do {
         shapeA <- getPatternShape setA sets;
@@ -158,17 +240,6 @@ module Parser.Sets where {
             | T i patA <- a = T (i + 1) $ patA <> b
             | T j patB <- b = T (j + 1) $ patB <> a
             | otherwise = T 2 $ a <> b
-    };
-    getPatternShape (Word setLookup) sets
-        | Just setDef <- set = getPatternShape setDef sets
-        | Nothing     <- set = Nothing
-    where {
-        set = snd <$> findByKey fst setLookup sets;
-        findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
-        findByKey _ _ [] = Nothing;
-        findByKey f k (x:xs)
-            | f x == k  = Just x
-            | otherwise = findByKey f k xs
     };
     getPatternShape (Id set) _ = error $ printf
         "Id %s should only be used for parsing set expressions"
