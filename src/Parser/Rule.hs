@@ -28,7 +28,7 @@ module Rule where {
     };
 
     showUQRule :: UQRule -> Sets -> String;
-    showUQRule (UniversalQuantifierRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: %s}" (show keys) (showRules rules) where {
+    showUQRule (UniversalQuantifierRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: [%s]}" (show keys) (showRules rules) where {
         keys = getPatternKeys pat patSet sets;
         showRules [SimpleRule basicRule] = show basicRule;
         showRules ((SimpleRule basicRule):rs) = show basicRule ++ ", " ++ showRules rs;
