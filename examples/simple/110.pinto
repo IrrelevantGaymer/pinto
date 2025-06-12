@@ -28,6 +28,7 @@ case Dec (beg E) (beg D) -> I
 case Dec (beg D) (beg C) -> I
 case Dec (beg C) (beg B) -> I
 case Dec (beg B) (beg A) -> I
-case Dec (beg A) beg -> Halt
+case Dec (beg A) beg -> I
+case Dec beg beg -> Halt
 
 start tape with Go = [(beg E) 1 0 1 0 1 0 1 0 1 end]
