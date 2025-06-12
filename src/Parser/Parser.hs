@@ -119,6 +119,15 @@ module Parser.Parser where {
         f [] = error "Unreachable: list of tokens should always end with EndOfFile";
     };
 
+    nodeString :: Parser ParserError ParserError (Atom String);
+    nodeString = Parser f where {
+        buildString s = "\"" ++ s ++ "\"";
+        f (x:xs)
+            | Atom (StringLiteral value) fileName pos <- x = Ok (xs, Atom (buildString value) fileName pos)
+            | otherwise                                  = Soft (ExpectedString x); 
+        f [] = error "Unreachable: list of tokens should always end with EndOfFile";
+    };
+
     nodeNum :: Parser ParserError ParserError (Atom Int);
     nodeNum = Parser f where {
         f (x:xs)
@@ -283,7 +292,7 @@ module Parser.Parser where {
     };
 
     nodePat :: Parser ParserError ParserError (Atom Pat);
-    nodePat = (nodePatValue <|> nodePatNum <|> nodePatListNode <|> nodePatTuple) <:&:> CouldNotParsePattern . received where {
+    nodePat = (nodePatValue <|> nodePatString <|> nodePatNum <|> nodePatListNode <|> nodePatTuple) <:&:> CouldNotParsePattern . received where {
         nodePatListNode = do {
             list <- nodePatList;
             return $ List <$> list;
@@ -293,6 +302,12 @@ module Parser.Parser where {
     nodePatValue :: Parser ParserError ParserError (Atom Pat);
     nodePatValue = do {
         value <- nodeWord;
+        return $ Value <$> value;
+    };
+
+    nodePatString :: Parser ParserError ParserError (Atom Pat);
+    nodePatString = do {
+        value <- nodeString;
         return $ Value <$> value;
     };
 

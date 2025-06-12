@@ -10,6 +10,9 @@ module Parser.ParserError where {
         ExpectedWord {
             received :: Atom Tkn  
         } |
+        ExpectedString {
+            received :: Atom Tkn
+        } |
         ExpectedClose {
             openTkn  :: Atom Tkn,
             expected :: Tkn,
