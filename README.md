@@ -22,7 +22,7 @@ These are temporary instructions to building Pinto from Src.  In the future, exe
 
 ## Using Pinto
 
-These are temporary instructions to using Pinto.  There are 4 commands: help, lex, parse, and interpret.  The help command gives detailed descriptions and instructions to use the other commands (Not yet).  The lex command, when provided with files, will print out the tokens of the pinto program.  The parse command, when provided with files, will print out the Sets, Tapes, and Rules parsed in the pinto program.  The interpret command will run program, printing out the Tape and its State while highlighting the Head at every step.  The lex and parse commands are used for debug purposes.
+These are temporary instructions to using Pinto.  There are 5 commands: help, lex, parse, interpret, and dinterpret.  The help command gives detailed descriptions and instructions to use the other commands (Not yet).  The lex command, when provided with files, will print out the tokens of the pinto program.  The parse command, when provided with files, will print out the Sets, Tapes, and Rules parsed in the pinto program.  The interpret command will run a program.  The dinterpret command (debug interpret) will run a program, printing out the Tape and its State while highlighting the Head at every step.  The lex and parse commands are used for debug purposes.
 
 ## Example Programs
 
@@ -30,7 +30,7 @@ At the moment, only the examples in the simple directory are supported.  The oth
 
 ## Writing Programs
 
-A Program consists of rules and a (theoretically) long tape.  At any given moment, there is a state of the Machine and a pointer to a given location on the tape, where state is an element of the set of all Mathematical Objects.  Every location on the tape stores an element of the set of all Mathematical Objects.  Rules map the element the pointer is currently pointing to to another object within the space of Mathematical Objects based of the current State of the program, before either moving the pointer left or right.
+A Program consists of rules and a (theoretically infinitely) long tape.  At any given moment, there is a state of the Machine and a pointer to a given location on the tape, where state is an element of the set of all Mathematical Objects.  Every location on the tape stores an element of the set of all Mathematical Objects.  Rules map the element the pointer is currently pointing to to another object within the space of Mathematical Objects based of the current State of the program, before either moving the pointer left or right.
 
 ### Rules
 The program consists of rules, defined like so:
@@ -72,7 +72,7 @@ start tape with Inc = [ 1 1 0 1 ] + default(0)
 Note: \
     At the moment default(0) does not work.  You can only define very simple tapes of just one list.
 
-**Not Implemented Yet**: This program by itself doesn't do anything.  In order to see anything, we must use built in States: (PrintHead a), (PrintState a), or (PrintTape start end a).  We can also use a helper State to act as a stand step, or a step where the Head of the Machine does not move.
+This program by itself doesn't do anything.  In order to see anything, we must use built in States: (PrintHead a), (PrintState a), or (PrintTape start end a).  We can also use a helper State to act as a stand step, or a step where the Head of the Machine does not move.
 
 ```
 // When in the state `Inc` and read `0`, replace it with `1` move the head
@@ -119,9 +119,9 @@ Halt: 0 0 1 1
 ```
 
 Note: \
-    Flags are not supported at the moment, so the debug flag is the current behavior of the interpreter.
+    Flags are not supported at the moment, so instead use the dinterpret command over the interpret command.
 
-You can concatenate different lists using set and function operators.  This lets the user eAsILy define where the head starts using the Here keyword as well as create infinite tapes of patterns.  List Comprehensions can aid in repetitive patterns.  For example, this tape has 16 rows of 16 "-"'s each bordered by an "&", where the Head starts on the third row and column.
+**Not Implemented Yet**: You can concatenate different lists using set and function operators.  This lets the user eAsILy define where the head starts using the Here keyword as well as create infinite tapes of patterns.  List Comprehensions can aid in repetitive patterns.  For example, this tape has 16 rows of 16 "-"'s each bordered by an "&", where the Head starts on the third row and column.
 
 ```
 start tape with State = [&] + [- for a in range(0, 16)] + 
@@ -137,6 +137,22 @@ Or it might be better to write it like this with an initial state of (RightUntil
 start tape with (RightUntil & (RightUntil & (Right 3 State))) = [&] + 
     Here [[- for a in range(0, 16)] + [&] for a in range(0, 16)]
 ```
+
+### Built In and Std Rules
+
+There are a few Rules built into the language that allows the Turing Machine to interact with the outside world.  Here's the list of the built in rules.
+
+- (Show a) -> Will print out the pattern of the Head
+- (ShowLn a) -> Will print out the pattern of the Head with a new line
+- (Print a) -> Will print out the pattern of the Head if it's a StringLiteral
+- (PrintLn a) -> Will print out the pattern of the Head if it's a StringLiteral with a new line
+- (ReadChar a) -> Will replace the current Head with a char read from stdin
+- (ReadString a) -> Will replace the current Head with a string read until whitespace from stdin
+- (ReadLine a) -> Will replace the current Head with a string read until a new line from stdin
+- (GetHeadAddr a) -> Will replace the current Head with the index of the Head
+- (PrintTape start end a) -> Will print the Tape from indices start to end inclusive
+
+Other useful rules can be found in the standard library.
 
 ### Tuple and S expressions
 
@@ -200,7 +216,12 @@ for n in Set {
 }
 ```
 
-## **Not Implemeted Yet**: Set Builder
+There are a couple Built In Sets which are useful.  There's the All Set, which contains all possible patterns, and the Int Set which contains all possible integers.
+
+Note: \
+    Technically, again, we can shoo away the fact that Int and All are infinite sized sets (any rule we make with them would expand to an infinite number of rules which is not compatible with "vanilla" Turing Machines) by saying realistically Computers can only hold finite number of states, so All and Int are actually subsets of the True All and Int sets wherein each element is physically possible, such that True All - All and True Int - Int would only contain values that are impossible for the Computer to process.
+
+### **Not Implemeted Yet**: Set Builder
 
 You can also use set builder notation to concisely define several elements.  Set Builder Notation in math looks like {x*2|x∈ℤ}.  In Pinto, Set Builder Notation is very similar: "x*2" is some pattern comprised of Tuples, Symbols, and/or Maps; "|" is replaced with "for"; "x" is a Pattern matched to a set; "∈" is replaced with in; and "ℤ" is some Set.
 
@@ -224,7 +245,7 @@ let AnimalState = {Alive Dead}
 let Shrondiger = AnimalState * Animal
 ```
 
-## **Not Implemented Yet**: Generic Sets
+### **Not Implemented Yet**: Generic Sets
 
 You can also define generic sets.
 
@@ -408,7 +429,7 @@ start tape with RotateClockwise = [ (A B C) (C B A) RotateCounterClockwise (A B 
 [ ] - Discard Pattern Support
 [ ] - Many Discard Pattern
 [X] - Sets \
-[ ] - Built In Sets \
+[X] - Built In Sets \
 [ ] - Set Builder Notation \
 [ ] - Structs \
 [X] - Universal Quantification \
@@ -418,6 +439,6 @@ start tape with RotateClockwise = [ (A B C) (C B A) RotateCounterClockwise (A B 
 [ ] - Built In Testing Support \
 [X] - Multiple Files \
 [ ] - Fix TUI \
-[ ] - Built In Rules \
+[X] - Built In Rules \
 [ ] - Import System \
 [ ] - Standard Library
