@@ -7,7 +7,7 @@ module Lexer.Lexer where {
     import Data.Bits (Bits(shiftL));
     import Text.Read (readMaybe);
     import Data.Maybe (isJust);
-    
+
     type FileName = String;
     type Row = Int;
     type Col = Int;
@@ -255,30 +255,30 @@ module Lexer.Lexer where {
     x `inRange` (a, b) = x >= a && x <= b;
 
     tknNum :: Lexer (Atom Tkn);
-    tknNum = do { 
+    tknNum = do {
         num <- lexBinNum <|> lexOctNum <|> lexHexNum <|> lexDecNum;
         return $ Num <$> num;
     } where {
         lexDecNum = do {
-            isNeg <- isJust <$> (optional $ lexChar '-');
+            isNeg <- isJust <$> optional (lexChar '-');
             decNum <- lexSpan isDigit;
             let {
-                sign | isNeg = -1 
+                sign | isNeg = -1
                      | otherwise = 1;
             };
-            case (readMaybe $ atomValue decNum) of {
+            case readMaybe $ atomValue decNum of {
                 Just num -> return decNum {atomValue = num * sign};
                 Nothing  -> empty;
             };
         };
         lexBinNum = do {
-            isNeg <- isJust <$> (optional $ lexChar '-');
+            isNeg <- isJust <$> optional (lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'b';
             binNum <- lexSpan (`elem` "01");
             let {
                 parsed = fmap (convertBinToDec . reverse) binNum;
-                sign | isNeg = -1 
+                sign | isNeg = -1
                      | otherwise = 1;
             };
             case atomValue parsed of {
@@ -289,13 +289,13 @@ module Lexer.Lexer where {
             convertBinToDec = convertBaseToDec '0' '1' 1;
         };
         lexOctNum = do {
-            isNeg <- isJust <$> (optional $ lexChar '-');
+            isNeg <- isJust <$> optional (lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'o';
             octNum <- lexSpan ((`elem` ['0'..'7']) . toLower);
             let {
                 parsed = fmap (convertOctToDec . reverse) octNum;
-                sign | isNeg = -1 
+                sign | isNeg = -1
                      | otherwise = 1;
             };
             case atomValue parsed of {
@@ -306,13 +306,13 @@ module Lexer.Lexer where {
             convertOctToDec = convertBaseToDec '0' '7' 3;
         };
         lexHexNum = do {
-            isNeg <- isJust <$> (optional $ lexChar '-');
+            isNeg <- isJust <$> optional (lexChar '-');
             _ <- lexChar '0';
             _ <- lexChar 'x';
             hexNum <- lexSpan ((||) <$> (`elem` ['0'..'9']) <*> (`elem` ['a'..'f']) . toLower);
             let {
                 parsed = fmap (convertHexToDec . reverse . map toLower) hexNum;
-                sign | isNeg = -1 
+                sign | isNeg = -1
                      | otherwise = 1;
             };
             case atomValue parsed of {
