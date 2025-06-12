@@ -29,6 +29,7 @@ module Parser.Sets where {
 
     getBuiltInSet :: String -> Maybe BuiltInSet;
     getBuiltInSet "All" = Just All;
+    getBuiltInSet "Int" = Just Int;
     getBuiltInSet _     = Nothing;
 
     -- TODO: make this a HashMap instead
