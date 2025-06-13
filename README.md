@@ -221,9 +221,9 @@ There are a couple Built In Sets which are useful.  There's the All Set, which c
 Note: \
     Technically, again, we can shoo away the fact that Int and All are infinite sized sets (any rule we make with them would expand to an infinite number of rules which is not compatible with "vanilla" Turing Machines) by saying realistically Computers can only hold finite number of states, so All and Int are actually subsets of the True All and Int sets wherein each element is physically possible, such that True All - All and True Int - Int would only contain values that are impossible for the Computer to process.
 
-### **Not Implemeted Yet**: Set Builder
+### Set Builder
 
-You can also use set builder notation to concisely define several elements.  Set Builder Notation in math looks like {x*2|x∈ℤ}.  In Pinto, Set Builder Notation is very similar: "x*2" is some pattern comprised of Tuples, Symbols, and/or Maps; "|" is replaced with "for"; "x" is a Pattern matched to a set; "∈" is replaced with in; and "ℤ" is some Set.
+You can also use set builder notation to concisely define several elements.  Set Builder Notation in math looks like {x\*2|x∈ℤ}.  In Pinto, Set Builder Notation is very similar: "x*2" is some pattern comprised of Tuples, Symbols, and/or Maps; "|" is replaced with "for"; "x" is a Pattern matched to a set; "∈" is replaced with in; and "ℤ" is some Set.
 
 ```
 let Animal = {Cat Dog Fish Turtle}
@@ -243,6 +243,22 @@ in this case however, using set operations, you could more concisely define Shro
 let Animal = {Cat Dog Fish Turtle}
 let AnimalState = {Alive Dead}
 let Shrondiger = AnimalState * Animal
+```
+
+You can even use Set Builders to build recursive sets (Sets that reference themselves).
+
+```
+let IntList = {(Cons i r) for (i r) in Int * IntList} + {Nil}
+
+for a in IntList case PrintList a a -> (Reset (PrintList Nil (PrintLn' "" (Right PrintList))))
+
+for (i l a) in Int * IntList * All case (PrintList Nil a) (Cons i l) i -> (Reset (ShowLn (Inject l (PrintList (Cons i Nil) a))))
+for (i j l m a) in Int * Int * IntList * IntList * All case (PrintList (Cons i l) a) (Cons j m) j -> (Reset (ShowLn (Inject m (PrintList (Cons j (Cons i l)) a))))
+for (l a) in IntList * All case (PrintList l a) Nil Nil -> (Reset (Inject l (ReverseList Nil a)))
+
+for (a b) in All * All case (ReverseList b a) Nil b -> (Reset a)
+for (i l a) in Int * IntList * All case (ReverseList Nil a) (Cons i l) l -> (Reset (ReverseList (Cons i Nil) a))
+for (i j l m a) in Int * Int * IntList * IntList * All case (ReverseList (Cons i l) a) (Cons j m) m -> (Reset (ReverseList (Cons j (Cons i l)) a))
 ```
 
 ### **Not Implemented Yet**: Generic Sets
