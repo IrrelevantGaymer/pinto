@@ -2,17 +2,17 @@ let Inner = { A B C D E }
 
 let Nest = {a for a in Inner} + {(a b) for (a b) in Nest * Inner}
 
-case Nest A (A B) -> (Reset Nest)
-case Nest B (B C) -> (Reset Nest)
-case Nest C (C D) -> (Reset Nest)
-case Nest D (D E) -> (Reset Nest)
+case Nest A (A B) .  Nest
+case Nest B (B C) .  Nest
+case Nest C (C D) .  Nest
+case Nest D (D E) .  Nest
 case Nest E E     -> Nest
 
 for a in Nest {
-    case Nest (a A) ((a A) B) -> (Reset Nest)
-    case Nest (a B) ((a B) C) -> (Reset Nest)
-    case Nest (a C) ((a C) D) -> (Reset Nest)
-    case Nest (a D) ((a D) E) -> (Reset Nest)
+    case Nest (a A) ((a A) B) .  Nest
+    case Nest (a B) ((a B) C) .  Nest
+    case Nest (a C) ((a C) D) .  Nest
+    case Nest (a D) ((a D) E) .  Nest
     case Nest (a E) (a E)     -> Nest
 }
 

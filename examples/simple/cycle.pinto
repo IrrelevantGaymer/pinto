@@ -1,9 +1,7 @@
-for (a b) in All * All case (Reset a) b b <- a
-
-case Cycle A B -> (Reset Cycle)
-case Cycle B C -> (Reset Cycle)
-case Cycle C D -> (Reset Cycle)
-case Cycle D F -> (Reset Cycle)
+case Cycle A B .  Cycle
+case Cycle B C .  Cycle
+case Cycle C D .  Cycle
+case Cycle D F .  Cycle
 case Cycle F F -> Cycle
 
 start tape with Cycle = [A B C D F D C B A end]

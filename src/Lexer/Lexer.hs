@@ -159,13 +159,14 @@ module Lexer.Lexer where {
     };
 
     tknArrow :: Lexer (Atom Tkn);
-    tknArrow = tknLeftArrow <|> tknRightArrow where {
+    tknArrow = tknLeftArrow <|> tknRightArrow <|> tknStay where {
         stringToDir string dir = do {
             arrowString <- lexStr string;
             return (Arrow dir <$ arrowString);
         };
         tknLeftArrow  = stringToDir "<-" L;
         tknRightArrow = stringToDir "->" R;
+        tknStay       = stringToDir "." Stay;
     };
 
     tknString :: Lexer (Atom Tkn);

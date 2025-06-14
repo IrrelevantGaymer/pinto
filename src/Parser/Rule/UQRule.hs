@@ -44,8 +44,9 @@ module Parser.Rule.UQRule where {
                     (Just tState) (Just rCurrState') rNextState';
                 tValues' = take tIdx tValues ++ tValue' : drop (tIdx + 1) tValues;
                 tIdx' = case rDir' of {
-                    Dir.L -> tIdx - 1;
-                    Dir.R -> tIdx + 1;
+                    Dir.L    -> tIdx - 1;
+                    Dir.R    -> tIdx + 1;
+                    Dir.Stay -> tIdx;
                 };
             };
             return $ Tape tName tState' tValues' tIdx';

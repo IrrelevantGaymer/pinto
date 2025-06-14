@@ -19,5 +19,5 @@ module Lexer.Tokens where {
     type UnOp = UnaryOperation;
     data UnaryOperation = Power deriving(Show, Eq);
 
-    data Arrow = L | R deriving(Show, Eq);
+    data Arrow = L | R | Stay deriving(Show, Eq);
 }

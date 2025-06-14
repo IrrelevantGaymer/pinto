@@ -16,8 +16,9 @@ module Parser.Rule.BasicRule where {
             (_, to) -> take tIdx tValues ++ to : drop (tIdx + 1) tValues;
         };
         newTIdx = case rDir of {
-            Dir.L -> tIdx - 1;
-            Dir.R -> tIdx + 1;
+            Dir.L    -> tIdx - 1;
+            Dir.R    -> tIdx + 1;
+            Dir.Stay -> tIdx;
         };
     };
 

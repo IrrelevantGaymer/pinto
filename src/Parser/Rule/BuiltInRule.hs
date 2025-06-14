@@ -4,56 +4,56 @@ module Parser.Rule.BuiltInRule where {
     import Parser.Pattern (Pattern(..));
     import Data.Char (isSpace);
     import Data.List (intersperse);
-    
+
     {-
-     - Print = for (a b) in All * All case (Print a) b b -> (Reset a)
-     - Read  = for (a b c) in All * All * All case (Read  a) b c -> (Reset a)
+     - Print = for (a b) in All * All case (Print a) b b . a
+     - Read  = for (a b c) in All * All * All case (Read  a) b c . a
      -       note: Read is weird/special because it gets the new tape value
      -             from the outside world
-     - GetHeadAddr = for (a b c) in All * All * Int case (GetHeadAddr a) b c -> (Reset a) 
+     - GetHeadAddr = for (a b c) in All * All * Int case (GetHeadAddr a) b c . a
      -}
     data BuiltInRule = Show | ShowLn | Print | PrintLn | ReadChar | ReadString | ReadLine | GetHeadAddr | PrintTape;
 
     builtInRules :: [BuiltInRule];
     builtInRules = [
-        Show, ShowLn, Print, PrintLn, 
-        ReadChar, ReadString, ReadLine, 
+        Show, ShowLn, Print, PrintLn,
+        ReadChar, ReadString, ReadLine,
         GetHeadAddr,
         PrintTape -- PrintTape should be temporary because we should be able to build this once we have the complete feature set
     ];
 
     applyBuiltInRule :: Tape -> BuiltInRule -> IO Tape;
-    applyBuiltInRule tape Show 
+    applyBuiltInRule tape Show
         | Tuple [Value "Show", a] <- tState = do {
             _ <- putStr $ show $ tValues !! tIdx;
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues (tIdx + 1);
+            return $ Tape tName a tValues tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule Show"
     where {
         (Tape tName tState tValues tIdx) = tape;
     };
-    applyBuiltInRule tape ShowLn 
+    applyBuiltInRule tape ShowLn
         | Tuple [Value "ShowLn", a] <- tState = do {
             _ <- print $ tValues !! tIdx;
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues (tIdx + 1);
+            return $ Tape tName a tValues tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule ShowLn"
     where {
         (Tape tName tState tValues tIdx) = tape;
     };
-    applyBuiltInRule tape Print 
-        | Tuple [Value "Print", a] <- tState, 
+    applyBuiltInRule tape Print
+        | Tuple [Value "Print", a] <- tState,
           Value s <- tValue,
           length s > 1,
           head s == '\"',
-          last s == '\"' 
+          last s == '\"'
         = do {
             let {
                 string = init $ tail s;
                 tValues' = take tIdx tValues ++ Value string : drop (tIdx + 1) tValues;
             };
             _ <- putStr string;
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule Print"
     where {
@@ -61,18 +61,18 @@ module Parser.Rule.BuiltInRule where {
         tValue = tValues !! tIdx;
     };
     applyBuiltInRule tape PrintLn
-        | Tuple [Value "PrintLn", a] <- tState, 
+        | Tuple [Value "PrintLn", a] <- tState,
           Value s <- tValue,
           length s > 1,
           head s == '\"',
-          last s == '\"' 
+          last s == '\"'
         = do {
             let {
                 string = init $ tail s;
                 tValues' = take tIdx tValues ++ Value string : drop (tIdx + 1) tValues;
             };
             _ <- putStrLn string;
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule PrintLn"
     where {
@@ -85,7 +85,7 @@ module Parser.Rule.BuiltInRule where {
             let {
                 tValues' = take tIdx tValues ++ Value [char] : drop (tIdx + 1) tValues;
             };
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule ReadChar"
     where {
@@ -98,16 +98,16 @@ module Parser.Rule.BuiltInRule where {
                 string' = "\"" ++ string ++ "\"";
                 tValues' = take tIdx tValues ++ Value string' : drop (tIdx + 1) tValues;
             };
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule ReadString"
     where {
         (Tape tName tState tValues tIdx) = tape;
         getString = do {
             char <- getChar;
-            if not $ isSpace char then 
-                (char:) <$> getString 
-            else 
+            if not $ isSpace char then
+                (char:) <$> getString
+            else
                 return "";
         };
     };
@@ -118,7 +118,7 @@ module Parser.Rule.BuiltInRule where {
                 line' = "\"" ++ line ++ "\"";
                 tValues' = take tIdx tValues ++ Value line' : drop (tIdx + 1) tValues;
             };
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule ReadLine"
     where {
@@ -129,7 +129,7 @@ module Parser.Rule.BuiltInRule where {
             let {
                 tValues' = take tIdx tValues ++ Num tIdx : drop (tIdx + 1) tValues;
             };
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues' (tIdx + 1);
+            return $ Tape tName a tValues' tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule GetHeadAddr"
     where {
@@ -142,7 +142,7 @@ module Parser.Rule.BuiltInRule where {
             };
             _ <- putStrLn $ intersperse ' ' $ concatMap show tapeToPrint;
 
-            return $ Tape tName (Tuple [Value "Reset", a]) tValues (tIdx + 1);
+            return $ Tape tName a tValues tIdx;
         }
         | otherwise = ioError $ error "Could not apply built in rule GetHeadAddr"
     where {
@@ -150,21 +150,21 @@ module Parser.Rule.BuiltInRule where {
     };
 
     canApplyBuiltInRule :: Tape -> BuiltInRule -> Bool;
-    canApplyBuiltInRule (Tape _ tState _ _) Show 
+    canApplyBuiltInRule (Tape _ tState _ _) Show
         | Tuple [Value "Show", _] <- tState = True
         | otherwise                          = False;
-    canApplyBuiltInRule (Tape _ tState _ _) ShowLn 
+    canApplyBuiltInRule (Tape _ tState _ _) ShowLn
         | Tuple [Value "ShowLn", _] <- tState = True
         | otherwise                          = False;
     canApplyBuiltInRule (Tape _ tState tValues tIdx) Print
-        | Tuple [Value "Print", _] <- tState, 
+        | Tuple [Value "Print", _] <- tState,
           Value s <- tValues !! tIdx,
           length s > 1,
           head s == '\"',
           last s == '\"' = True
         | otherwise = False;
     canApplyBuiltInRule (Tape _ tState tValues tIdx) PrintLn
-        | Tuple [Value "PrintLn", _] <- tState, 
+        | Tuple [Value "PrintLn", _] <- tState,
           Value s <- tValues !! tIdx,
           length s > 1,
           head s == '\"',

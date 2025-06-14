@@ -102,13 +102,14 @@ module Parser.Parser where {
     };
 
     nodeDir :: Parser ParserError ParserError (Atom Dir);
-    nodeDir = leftDir <|> rightDir where {
+    nodeDir = leftDir <|> rightDir <|> stayDir where {
         arrowToDir arrow dir = do {
             arrowTkn <- nodeTkn $ Arrow arrow;
             return (dir <$ arrowTkn);
         };
-        leftDir  = arrowToDir Tokens.L Dir.L;
-        rightDir = arrowToDir Tokens.R Dir.R;
+        leftDir  = arrowToDir Tokens.L    Dir.L;
+        rightDir = arrowToDir Tokens.R    Dir.R;
+        stayDir  = arrowToDir Tokens.Stay Dir.Stay;
     };
 
     nodeWord :: Parser ParserError ParserError (Atom String);

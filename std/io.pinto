@@ -1,8 +1,8 @@
-for (a b) in All * All case (PrintHead a) b b -> (Reset (Show a))
-for (a b) in All * All case (PrintState a) b a -> (Reset (Print (SwapHead b)))
+for (a b) in All * All case (PrintHead a)  b b . (Show a)
+for (a b) in All * All case (PrintState a) b a . (Print (SwapHead b))
 
-for (a b c) in All * All * All case (Show' a b) c a -> (Reset (Show (Inject c b)))
-for (a b c) in All * All * All case (ShowLn' a b) c a -> (Reset (ShowLn (Inject c b)))
-for (a b c) in All * All * All case (Print' a b) c a -> (Reset (Print (Inject c b)))
-for (a b c) in All * All * All case (PrintLn' a b) c a -> (Reset (PrintLn (Inject c b)))
+for (a b c) in All * All * All case (Show' a b)    c a . (Show (Inject c b))
+for (a b c) in All * All * All case (ShowLn' a b)  c a . (ShowLn (Inject c b))
+for (a b c) in All * All * All case (Print' a b)   c a . (Print (Inject c b))
+for (a b c) in All * All * All case (PrintLn' a b) c a . (PrintLn (Inject c b))
 
