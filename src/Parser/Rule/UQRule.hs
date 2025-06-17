@@ -20,7 +20,7 @@ module Parser.Rule.UQRule where {
     };
 
     applyUQRule :: Tape -> Sets -> UQRule -> Tape;
-    applyUQRule tape sets rule 
+    applyUQRule tape sets rule
         | Just tape' <- tryApply keys rRules = tape'
         | otherwise = error "Could not apply UQ Rule"
     where {
@@ -34,13 +34,13 @@ module Parser.Rule.UQRule where {
 
         apply :: Keys -> Rule -> Maybe Tape;
         apply ks (SimpleRule basicRule) = do {
-            ruleKeys <- join $ combinePatKeys 
+            ruleKeys <- join $ combinePatKeys
                 <$> getPatKeys sets ks rCurrState' tState
                 <*> getPatKeys sets ks rFromValue' tValue;
             let {
-                tValue' = constructNewValue ruleKeys 
+                tValue' = constructNewValue ruleKeys
                     (Just tValue) (Just rFromValue') rToValue';
-                tState' = constructNewValue ruleKeys 
+                tState' = constructNewValue ruleKeys
                     (Just tState) (Just rCurrState') rNextState';
                 tValues' = take tIdx tValues ++ tValue' : drop (tIdx + 1) tValues;
                 tIdx' = case rDir' of {
@@ -58,36 +58,36 @@ module Parser.Rule.UQRule where {
             ks' = ks ++ fromMaybe [] (getPatternKeys sets rPat' rPatSet')
         };
 
-        constructNewValue 
-            :: PatKeys 
-            -> Maybe Pat 
-            -> Maybe Pat 
-            -> Pat 
+        constructNewValue
+            :: PatKeys
+            -> Maybe Pat
+            -> Maybe Pat
+            -> Pat
             -> Pat;
-        constructNewValue rKeys _ _ (Value v) 
+        constructNewValue rKeys _ _ (Value v)
             | Just v' <- kLookup = v'
             | Nothing <- kLookup = Value v
         where {
             kLookup = snd <$> findByKey fst v rKeys;
         };
         constructNewValue _ _ _ (Num v) = Num v;
-        constructNewValue rKeys (Just (Tuple ts)) (Just (Tuple fs)) (Tuple vs) = 
+        constructNewValue rKeys (Just (Tuple ts)) (Just (Tuple fs)) (Tuple vs) =
             Tuple $ constructNewValues rKeys ts fs vs;
-        constructNewValue rKeys (Just (Value _)) (Just (Value _)) (Tuple vs) = 
+        constructNewValue rKeys (Just (Value _)) (Just (Value _)) (Tuple vs) =
             Tuple $ constructNewValues rKeys [] [] vs;
         --This feels weird
-        constructNewValue rKeys _ _ (Tuple vs) = 
+        constructNewValue rKeys _ _ (Tuple vs) =
             Tuple $ constructNewValues rKeys [] [] vs;
-        constructNewValue rKeys (Just (List ts)) (Just (List fs)) (List vs) = 
+        constructNewValue rKeys (Just (List ts)) (Just (List fs)) (List vs) =
             List $ constructNewValues rKeys ts fs vs;
-        constructNewValue rKeys (Just (Value _)) (Just (Value _)) (List vs) = 
+        constructNewValue rKeys (Just (Value _)) (Just (Value _)) (List vs) =
             List $ constructNewValues rKeys [] [] vs;
         --This feels weird
-        constructNewValue rKeys (Just (Num _)) (Just (Num _)) (List vs) = 
+        constructNewValue rKeys (Just (Num _)) (Just (Num _)) (List vs) =
             List $ constructNewValues rKeys [] [] vs;
-        constructNewValue rKeys Nothing Nothing (List vs) = 
+        constructNewValue rKeys Nothing Nothing (List vs) =
             List $ constructNewValues rKeys [] [] vs;
-        constructNewValue _ _ _ (List _) = 
+        constructNewValue _ _ _ (List _) =
             error "Unmatched tape value and rule from value";
         constructNewValue rKeys
             (Just (Record _ ts))
@@ -100,21 +100,21 @@ module Parser.Rule.UQRule where {
         constructNewValue rKeys _ _ (Record name vs) = Record name $
             uncurry zip $ constructNewValues rKeys [] [] <$> unzip vs;
         constructNewValue _ (Just t) (Just Discard) Discard = t;
-        constructNewValue _ Nothing (Just Discard) Discard = 
+        constructNewValue _ Nothing (Just Discard) Discard =
             error "Unmatched tape value and rule from value";
         constructNewValue _ _ (Just from) Discard = from;
-        constructNewValue _ _ Nothing Discard = 
+        constructNewValue _ _ Nothing Discard =
             error "Invalid use of Discard in rule to value";
 
-        constructNewValues 
-            :: PatKeys 
-            -> [Pat] 
-            -> [Pat] 
-            -> [Pat] 
+        constructNewValues
+            :: PatKeys
+            -> [Pat]
+            -> [Pat]
+            -> [Pat]
             -> [Pat];
         constructNewValues _ _ _ [] = [];
-        constructNewValues rKeys ts fs (v:vs) = 
-            constructNewValue rKeys (headMaybe ts) (headMaybe fs) v 
+        constructNewValues rKeys ts fs (v:vs) =
+            constructNewValue rKeys (headMaybe ts) (headMaybe fs) v
             : constructNewValues rKeys ts fs vs
         where {
             headMaybe :: [a] -> Maybe a;
@@ -123,7 +123,7 @@ module Parser.Rule.UQRule where {
         };
 
         combinePatKeys :: PatKeys -> PatKeys -> Maybe PatKeys;
-        combinePatKeys (a:as) bs 
+        combinePatKeys (a:as) bs
             | Just (_, bPat) <- b, aPat == bPat = combinePatKeys as bs
             | Just _         <- b               = Nothing
             | Nothing        <- b               = combinePatKeys as (a:bs)
@@ -148,7 +148,7 @@ module Parser.Rule.UQRule where {
         keys' = keys ++ fromMaybe [] (getPatternKeys sets rPat rPatSet);
 
         canApply :: Rule -> Bool;
-        canApply (SimpleRule basicRule) = or $ matchPatKeys 
+        canApply (SimpleRule basicRule) = or $ matchPatKeys
             <$> stateKeys
             <*> valueKeys
         where {
@@ -159,7 +159,7 @@ module Parser.Rule.UQRule where {
         canApply (ComplexRule uqRule) = canApplyUQRule tape keys' sets uqRule;
 
         matchPatKeys :: PatKeys -> PatKeys -> Bool;
-        matchPatKeys (a:as) bs 
+        matchPatKeys (a:as) bs
             | Just bPat <- b = (aPat == bPat) && matchPatKeys as bs
             | Nothing   <- b = matchPatKeys as bs
         where {
@@ -176,16 +176,16 @@ module Parser.Rule.UQRule where {
     };
 
     getPatKeys :: Sets -> Keys -> Pat -> Pat -> Maybe PatKeys;
-    getPatKeys sets ks r@(Value key) t 
+    getPatKeys sets ks r@(Value key) t
         | r == t                     = Just []
         | or (inShape t <$> uqShape) = Just [(key, t)]
-        | otherwise = Nothing 
+        | otherwise = Nothing
     where {
         uqShape = snd <$> findByKey fst key ks;
         inShape v (SetRef shp) = valueInSet sets v shp;
         inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet sets i v shp;
         --Maybe rewrite this.  I kinda hate converting the integer to a string
-        inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp; 
+        inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet sets i (show v) shp;
         inShape _ _ = False;
 
         findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
@@ -196,15 +196,21 @@ module Parser.Rule.UQRule where {
     };
     getPatKeys _ _ (Num k) (Num t) = if k == t then Just [] else Nothing;
     getPatKeys sets ks (Tuple uqPats) (Tuple tPats)
-        | length uqPats == length tPats = 
-            foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
+        | length uqPats == length tPats
+        = foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
         | otherwise = Nothing
     where {
         combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
         combine a b = (++) <$> a <*> b;
     };
     getPatKeys sets ks (List uqPats) (List tPats)
+        | length uqPats == length tPats
+        = foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
         | otherwise = Nothing
+    where {
+        combine :: Maybe [a] -> Maybe [a] -> Maybe [a];
+        combine a b = (++) <$> a <*> b;
+    };
     getPatKeys sets ks (Record kName kFields) (Record tName tFields)
         | kName == tName,
           length kFields == length tFields,
