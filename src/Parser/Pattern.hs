@@ -1,11 +1,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Parser.Pattern where {
+    import Text.Printf (printf);
+
     type Pat = Pattern;
     data Pattern = Value String
         | Num   Int
-        | List  [Pattern]
-        | Tuple [Pattern]
+        | List  [Pat]
+        | Tuple [Pat]
+        | Record {
+            recordName   :: Pat,
+            recordFields :: [(Pat, Pat)]
+        }
         | Discard
         deriving(Eq);
 
@@ -24,11 +30,23 @@ module Parser.Pattern where {
             s2 (x:xs) = " " ++ show x ++ s2 xs;
             s2 [] = "";
         };
+        show (Record name values) = printf "{%s where%s}" (show name) (s values) where {
+            s ((field, value):vs) = printf " %s: %s%s" (show field) (show value) (s vs);
+            s [] = "";
+        };
         show Discard = "_"
     };
 
     type PatShape = PatternShape;
-    data PatternShape = V | L PatternShape | T Int PatternShape | D deriving (Show);
+    data PatternShape = V | 
+        L [PatShape] | 
+        T [PatShape] | 
+        R {
+            rName   :: Pat,
+            rFields :: [(Pat, PatShape)]
+        } | 
+        D 
+        deriving (Show);
 
     instance Semigroup PatShape where {
         D <> x = x;

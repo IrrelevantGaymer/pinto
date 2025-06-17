@@ -260,6 +260,41 @@ for (i l a) in Int * IntList * All case (ReverseList Nil a) (Cons i l) l . (Reve
 for (i j l m a) in Int * Int * IntList * IntList * All case (ReverseList (Cons i l) a) (Cons j m) m . (ReverseList (Cons j (Cons i l)) a)
 ```
 
+### Record Sets
+
+Sometimes it's useful to group data together.  Our current mechanism for this is applying a Cartesian Product on Sets.  If we wanted to represent a coordinate, it would be in the set `Int * Int`.  However, it's useful to have each element have a name.  Technically, this is still doable via this clunky notation: `({x} * Int) * ({y} * Int)`.  This is annoying.
+
+We have built in syntax to better present this concept.  We can define a record set:
+
+```
+let Coord = {Coord in x: Int * y: Int}
+```
+
+One can construct or destruct an element of a Record:
+
+```
+{Coord where x: val1 y: val2}
+```
+
+or if you want the patterns to have the same names as the members of the record:
+
+```
+{Coord where x y}
+```
+
+#### Examples
+
+```
+let Coord = {Coord in x: Int * y: Int * z: Int}
+
+for coord in Coord where
+    {Coord in x y z: depth} = coord
+    case Offset coord {Coord where x y z: (add for depth 1)}
+```
+
+Note: \
+    At the moment, where clauses are not supported.  To make this example work, you need to delete line 4, and replace both instance of coord with `{Coord where x y z: depth}`
+
 ### **Not Implemented Yet**: Generic Sets
 
 You can also define generic sets.

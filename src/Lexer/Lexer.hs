@@ -117,7 +117,7 @@ module Lexer.Lexer where {
     };
 
     specialChars :: [Char];
-    specialChars = "(){}[]=$+-*&^";
+    specialChars = "(){}[]=$+-*&^:";
 
     ws :: Lexer (Atom String);
     ws = lexSpan isSpace;
@@ -132,6 +132,12 @@ module Lexer.Lexer where {
     tknKwrdIn = do {
         kwrd <- lexStr "in";
         return (Keyword In <$ kwrd);
+    };
+
+    tknKwrdWhere :: Lexer (Atom Tkn);
+    tknKwrdWhere = do {
+        kwrd <- lexStr "where";
+        return (Keyword Where <$ kwrd);
     };
 
     tknKwrdCase :: Lexer (Atom Tkn);
@@ -214,8 +220,14 @@ module Lexer.Lexer where {
         return (CloseBracket <$ char);
     };
 
+    tknColon :: Lexer (Atom Tkn);
+    tknColon = do {
+        char <- lexChar ':';
+        return (Colon <$ char);
+    };
+
     tknAssign :: Lexer (Atom Tkn);
-    tknAssign =do {
+    tknAssign = do {
         char <- lexChar '=';
         return (Assign <$ char);
     };
@@ -355,7 +367,8 @@ module Lexer.Lexer where {
         tknKeywords, tknDelimiters, tknNum, tknOperations, tknMultiCharacter, tknInvalid
     ] where {
         tknKeywords = asum [
-            tknKwrdFor, tknKwrdIn, tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith
+            tknKwrdFor, tknKwrdIn, tknKwrdWhere,
+            tknKwrdCase, tknKwrdLet, tknKwrdStart, tknKwrdWith
         ];
         tknDelimiters = asum [
             tknOpenParen, tknCloseParen,
@@ -363,7 +376,7 @@ module Lexer.Lexer where {
             tknOpenBracket, tknCloseBracket
         ];
         tknOperations = asum [
-            tknAssign, tknArrow,
+            tknColon, tknAssign, tknArrow,
             tknUnOpPower,
             tknBinOpUnion, tknBinOpDifference, tknBinOpCartesianProduct
         ];

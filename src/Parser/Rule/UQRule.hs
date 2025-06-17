@@ -89,6 +89,16 @@ module Parser.Rule.UQRule where {
             List $ constructNewValues rKeys [] [] vs;
         constructNewValue _ _ _ (List _) = 
             error "Unmatched tape value and rule from value";
+        constructNewValue rKeys
+            (Just (Record _ ts))
+            (Just (Record _ fs))
+            (Record name vs)
+        = Record name $ uncurry zip $ constructNewValues rKeys
+            (map snd ts)
+            (map snd fs)
+            <$> unzip vs;
+        constructNewValue rKeys _ _ (Record name vs) = Record name $
+            uncurry zip $ constructNewValues rKeys [] [] <$> unzip vs;
         constructNewValue _ (Just t) (Just Discard) Discard = t;
         constructNewValue _ Nothing (Just Discard) Discard = 
             error "Unmatched tape value and rule from value";
@@ -194,8 +204,13 @@ module Parser.Rule.UQRule where {
         combine a b = (++) <$> a <*> b;
     };
     getPatKeys sets ks (List uqPats) (List tPats)
-        | length uqPats == length tPats = 
-            foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> zip uqPats tPats
+        | otherwise = Nothing
+    getPatKeys sets ks (Record kName kFields) (Record tName tFields)
+        | kName == tName,
+          length kFields == length tFields,
+          map fst kFields == map fst tFields
+        = foldl combine (Just []) $ uncurry (getPatKeys sets ks) <$> 
+            zip (map snd kFields) (map snd tFields)
         | otherwise = Nothing
     where {
         combine :: Maybe [a] -> Maybe [a] -> Maybe [a];

@@ -5,13 +5,13 @@ module Lexer.Tokens where {
                  OpenBracket           | CloseBracket         |
                  Keyword Kwrd          | Arrow Arrow          |
                  Word String           | Num Int              |
-                 StringLiteral String  |
+                 StringLiteral String  | Colon                |
                  Assign                | Invalid              |
                  BinaryOperation BinOp | UnaryOperation UnOp  |
                  EndOfFile             deriving(Show, Eq);
               
     type Kwrd = Keyword;
-    data Keyword = For | In | Case | Let | Start | With deriving(Show, Eq);
+    data Keyword = For | In | Where | Case | Let | Start | With deriving(Show, Eq);
 
     type BinOp = BinaryOperation;
     data BinaryOperation = Union | Difference | CartesianProduct deriving(Show, Eq);

@@ -20,6 +20,10 @@ module Parser.Sets where {
             buildMatch  :: !Pat,
             buildSetDef :: !SetDef
         } | 
+        RecordSet {
+            recordName :: !Pat,
+            recordFields :: ![(Pat, SetDef)]
+        } |
         Word !String |
         UnOpSet !UnOp !SetDef |
         BinOpSet !BinOp !SetDef !SetDef |
@@ -89,6 +93,12 @@ module Parser.Sets where {
         matchPat _ _ Discard _ = True;
         matchPat _ _ _ _ = False;
     };
+    valueInSet sets (Record vName vFields) (RecordSet sName sFields)
+        | vName == sName,
+          map fst vFields == map fst sFields
+        = and $ zipWith (valueInSet sets) (map snd vFields) (map snd sFields);
+    valueInSet _ (Record _ _) _ = False;
+    valueInSet _ _ (RecordSet _ _) = False;
     valueInSet _ _ (UnOpSet PowerSet _) = undefined;
     valueInSet sets value (BinOpSet Union setA setB) =
         valueInSet sets value setA || valueInSet sets value setB;
@@ -116,6 +126,7 @@ module Parser.Sets where {
         valueIn :: [Int] -> String -> Pat -> Bool;
         valueIn (i:is) k (Tuple vs) = or $ valueIn is k <$> vs !? i;
         valueIn (i:is) k (List vs) = or $ valueIn is k <$> vs !? i;
+        valueIn (i:is) k (Record _ vs) = or $ valueIn is k <$> map snd vs !? i;
         valueIn [] k (Value v) = k == v;
         valueIn [] k (Num v) = k == show v;
         valueIn _ _ _ = False;
@@ -150,6 +161,7 @@ module Parser.Sets where {
         valueIn :: Sets -> Keys -> [Int] -> String -> Pat -> Bool;
         valueIn ss ks (i:is) k (Tuple vs) = or $ valueIn ss ks is k <$> vs !? i;
         valueIn ss ks (i:is) k (List vs) = or $ valueIn ss ks is k <$> vs !? i;
+        valueIn ss ks (i:is) k (Record _ vs) = or $ valueIn ss ks is k <$> map snd vs !? i;
         valueIn ss ks [] key (Value t) = key == t || or (inShape t <$> mShape) where {
             mShape = snd <$> findByKey fst key ks;
             inShape v (SetRef shp) = valueInSet ss (Value v) shp;
@@ -172,6 +184,18 @@ module Parser.Sets where {
             | idx > 0   = xs !? (idx - 1)
             | otherwise = Nothing;
     };
+    valueInIdxSet sets (idx:idcs) value (RecordSet _ fieldSets) =
+        or $ valueInIdxSet sets idcs value <$> fmap snd (fieldSets !? idx)
+    where {
+        infixl 9 !?;
+        (!?) :: [a] -> Int -> Maybe a;
+        []     !? _     = Nothing;
+        (x:_)  !? 0     = Just x;
+        (_:xs) !? i
+            | i > 0     = xs !? (i - 1)
+            | otherwise = Nothing;
+    };
+    valueInIdxSet _ [] _ (RecordSet _ _) = False;
     valueInIdxSet _ _ _ (UnOpSet PowerSet _) = undefined;
     valueInIdxSet sets idcs value (BinOpSet Union setA setB) =
         valueInIdxSet sets idcs value setA || valueInIdxSet sets idcs value setB;
@@ -200,6 +224,8 @@ module Parser.Sets where {
     };
     -- TODO: add checking if the set builder is properly formatted
     getPatternShape (SetBuilder pat _ _) _ = Just $ getShape pat;
+    getPatternShape (RecordSet name fields) sets = R name <$>
+        traverse sequenceA (second (`getPatternShape` sets) <$> fields);
     getPatternShape (UnOpSet PowerSet _) _ = Just V;
     getPatternShape (BinOpSet Union setA setB) sets = do {
         shapeA <- getPatternShape setA sets;
@@ -241,11 +267,12 @@ module Parser.Sets where {
         getKey (p:ps) s = (ps,) <$> getPatternKeys p s sets;
         getKey [] _ = Nothing;
     };
-    getPatternKeys (Tuple pats) def sets
-        | Just (T len defs) <- defShape = if length pats == len then
-            getKeys (zip [0..] pats) [] defs;
-        else
-            Nothing
+    getPatternKeys sets (Record vName vs) def
+        | Just (R sName shps) <- defShape, 
+          vName == sName, 
+          length vs == length shps,
+          map fst vs == map fst shps
+        = concat <$> zipWithM (getIdxKey [] def) (map snd shps) (zip [0..] (map snd vs))
         | otherwise = Nothing
     where {
         defShape = getPatternShape def sets;
@@ -257,8 +284,11 @@ module Parser.Sets where {
             else
                 Nothing
             | List _ <- x, L _ <- shp = undefined
-            | otherwise = Nothing;
-        getKeys [] _ _ = Just []
-    };
-    getPatternKeys Discard _ _ = Just [];
+        | Record vName vs <- x, 
+          R sName shps <- shp, 
+          vName == sName, 
+          length vs == length shps,
+          map fst vs == map fst shps
+        = concat <$> zipWithM (getIdxKey idcs def) (map snd shps) (zip [0..] (map snd vs))
+        | otherwise = Nothing;
 }

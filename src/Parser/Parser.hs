@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module Parser.Parser where {
     import Control.Applicative ( Alternative(empty), Alternative(many) );
 
@@ -233,7 +234,7 @@ module Parser.Parser where {
 
     nodeAtomSet :: Parser ParserError ParserError (Atom SetDef);
     nodeAtomSet = do {
-        set <- nodeGroupSet <|> nodeSetWithUnary <|> nodeBuilderSet <|> nodeBasicSet <|> nodeWordSet;
+        set <- nodeGroupSet <|> nodeSetWithUnary <|> nodeBuilderSet <|> nodeRecordSet <|> nodeBasicSet <|> nodeWordSet;
         return $ Id <$> set;
     } where {
         nodeWordSet = do {
@@ -278,6 +279,39 @@ module Parser.Parser where {
         return $ SetBuilder <$> pat <*> match <*> set;
     };
 
+    nodeRecordSet :: Parser ParserError ParserError (Atom SetDef);
+    nodeRecordSet = do {
+        open   <- nodeTkn OpenBrace;
+        pat    <- nodePat;
+        _      <- nodeTkn (Keyword In) <:&:> UnexpectedToken (Keyword In) . received;
+        fields <- field `sepBy` cartesianProductOp;
+        _      <- nodeTkn CloseBrace <|=:$ ExpectedClose open CloseBrace . received;
+        return $ RecordSet <$> pat <*> sequenceA fields;
+    } where {
+        field = do {
+            name <- nodePat;
+            _    <- nodeTkn Colon <|=:$ UnexpectedToken Colon . received;
+            set  <- fieldSet;
+            return $ fmap (, atomValue set) name;
+        };
+        fieldSet = nodeBasicSet <|> nodeWordSet <|> nodeGroupSet;
+        nodeWordSet = do {
+            set <- nodeWord;
+            return $ Sets.Word <$> set;
+        };
+        nodeGroupSet = do {
+            open <- nodeTkn OpenParen;
+            set  <- nodeSet;
+            _    <- nodeTkn CloseParen <|=:$ ExpectedClose open CloseParen . received;
+            return set;
+        };
+        cartesianProductOp = do {
+            opTkn <- nodeTkn $ Tokens.BinaryOperation Tokens.CartesianProduct;
+            return (Sets.CartesianProduct <$ opTkn);
+        };
+        sepBy element sep = (:) <$> element <*> many (sep *> element) <|> pure [];
+    };
+
     nodeBinaryOp :: Parser ParserError ParserError (Atom BinOp);
     nodeBinaryOp = (unionOp <|> differenceOp <|> cartesianProductOp) <:&:> ExpectedBinaryOp . received where {
         tknToBinOp tkn op = do {
@@ -305,7 +339,7 @@ module Parser.Parser where {
     };
 
     nodePat :: Parser ParserError ParserError (Atom Pat);
-    nodePat = (nodePatValue <|> nodePatString <|> nodePatNum <|> nodePatListNode <|> nodePatTuple) <:&:> CouldNotParsePattern . received where {
+    nodePat = (nodePatValue <|> nodePatString <|> nodePatNum <|> nodePatListNode <|> nodePatTuple <|> nodePatRecord) <:&:> CouldNotParsePattern . received where {
         nodePatListNode = do {
             list <- nodePatList;
             return $ List <$> list;
@@ -351,6 +385,28 @@ module Parser.Parser where {
             _    <- nodeTkn CloseParen <|=:$ ExpectedClose open CloseParen . received;
             return pats;
         };
+    };
+
+    nodePatRecord :: Parser ParserError ParserError (Atom Pat);
+    nodePatRecord = do {
+        open   <- nodeTkn OpenBrace;
+        name   <- nodePat;
+        _      <- nodeTkn (Keyword Where);
+        fields <- many fieldPat;
+        _      <- nodeTkn CloseBrace <|=:$ ExpectedClose open CloseBrace . received;
+        return $ Record <$> name <*> sequenceA fields;
+    } where {
+        fieldPat = namedFieldPat <|> elidedFieldPat;
+        namedFieldPat = do {
+            name   <- nodePat;
+            _      <- nodeTkn Colon;
+            value  <- nodePat;
+            return $ fmap (, atomValue value) name;
+        };
+        elidedFieldPat = do {
+            name <- nodePat;
+            return $ fmap (, atomValue name) name;
+        }
     };
 
     parseNode :: Parser ParserError ParserError Node;
