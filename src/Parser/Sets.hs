@@ -140,8 +140,8 @@ module Parser.Sets where {
             | otherwise = Nothing;
     }; 
     valueInIdxSet sets idcs value (Word set)
-        | Just All <- tryBuiltIn = False -- The general pattern shape of All is Value not Tuple
-        | Just Int <- tryBuiltIn = False -- The general pattern shape of Int is Value not Tuple
+        | Just All <- tryBuiltIn = null idcs
+        | Just Int <- tryBuiltIn = null idcs
         | Nothing  <- tryBuiltIn = or $ valueInIdxSet sets idcs value . snd <$> findByKey fst set sets
     where {
         tryBuiltIn = getBuiltInSet set;
@@ -213,9 +213,13 @@ module Parser.Sets where {
     getPatternShape (Set pats) _ = Just $ mconcat $ fmap getShape pats;
     getPatternShape (Word setLookup) sets
         | Just setDef <- set = getPatternShape setDef sets
-        | Nothing     <- set = Nothing
+        | Just All    <- tryBuiltIn = Just V
+        | Just Int    <- tryBuiltIn = Just V
+        | Nothing <- set, Nothing <- tryBuiltIn = Nothing
     where {
         set = snd <$> findByKey fst setLookup sets;
+        tryBuiltIn = getBuiltInSet setLookup;
+
         findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
         findByKey _ _ [] = Nothing;
         findByKey f k (x:xs)
