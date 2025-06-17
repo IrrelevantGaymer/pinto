@@ -267,6 +267,14 @@ module Parser.Sets where {
         getKey (p:ps) s = (ps,) <$> getPatternKeys sets p s;
         getKey [] _ = Nothing;
     };
+    getPatternKeys sets (Tuple vs) def
+        | Just (T shps) <- defShape,
+          length vs == length shps
+        = concat <$> zipWithM (getIdxKey [] def) shps (zip [0..] vs)
+        | otherwise = Nothing
+    where {
+        defShape = getPatternShape def sets;
+    };
     getPatternKeys sets (Record vName vs) def
         | Just (R sName shps) <- defShape, 
           vName == sName, 
@@ -276,6 +284,10 @@ module Parser.Sets where {
         | otherwise = Nothing
     where {
         defShape = getPatternShape def sets;
+        
+    };
+    getPatternKeys _ Discard _ = Just [];
+
     getIdxKey :: [Int] -> SetDef -> PatShape -> (Int, Pat) -> Maybe Keys;
     getIdxKey idcs def shp (idx, x)
         | Value v <- x, V <- shp = Just [(v, IdxInSetRef (idcs ++ [idx]) def)]
