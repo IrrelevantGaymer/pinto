@@ -51,8 +51,8 @@ module Parser.Pattern where {
     instance Semigroup PatShape where {
         D <> x = x;
         x <> D = x;
-        L x <> L y = L $ x <> y;
-        T i x <> T j y = T (i + j) $ x <> y; 
+        L x <> L y = L $ (<>) <$> x <*> y;
+        T x <> T y = T $ (<>) <$> x <*> y; 
         _ <> _ = V;
     };
 
@@ -63,8 +63,8 @@ module Parser.Pattern where {
     type PatKeys = [(String, Pat)];
 
     getShape :: Pat -> PatShape;
-    getShape (Tuple pats) = T (length pats) $ mconcat $ fmap getShape pats;
+    getShape (Tuple pats) = T $ fmap getShape pats;
     -- This will require some experimentation
-    getShape (List pats) = L $ mconcat $ fmap getShape pats;
+    getShape (List pats) = L $ fmap getShape pats;
     getShape _ = V;
 }
