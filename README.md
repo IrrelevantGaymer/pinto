@@ -81,8 +81,7 @@ case Inc 0 1 -> (PrintTape 0 3 Halt)
 
 // Really the following rules would be in the standard library
 // and would not have to be implemented
-for a in All case (PrintTape _ _ a) _ _ -> (Reset a)
-for a in All case (Reset a) _ _ <- a 
+for a in All case (PrintTape _ _ a) _ _ . a 
 
 // When in the state `Inc` and read `1`, replace it with `0` move the head
 // to the right and keep staying in the state `Inc` effectively looping over
@@ -103,7 +102,7 @@ Now this would print out:
 ```
 
 Note: \
-    Built in functions (soecifically IO) do not technically violate the definition of a Turing Machine.  We can interpet all states as including a world object, so instead of Foo, we'd have (Foo world).  So the "true" version of the Print state would be: `for (string a world) in All * All * World case ((Print a) world) string string -> (Reset (a print_to_world(string, world)))`
+    Built in functions (soecifically IO) do not technically violate the definition of a Turing Machine.  We can interpet all states as including a world object, so instead of Foo, we'd have (Foo world).  So the "true" version of the Print state would be: `for (string a world) in All * All * World case ((Print a) world) string string . (a print_to_world(string, world))`
 
 Or instead, you could run the original program with a -d Debug flag, which would print out:
 
@@ -250,15 +249,15 @@ You can even use Set Builders to build recursive sets (Sets that reference thems
 ```
 let IntList = {(Cons i r) for (i r) in Int * IntList} + {Nil}
 
-for a in IntList case PrintList a a -> (Reset (PrintList Nil (PrintLn' "" (Right PrintList))))
+for a in IntList case PrintList a a . (PrintList Nil (PrintLn' "" (Right PrintList)))
 
-for (i l a) in Int * IntList * All case (PrintList Nil a) (Cons i l) i -> (Reset (ShowLn (Inject l (PrintList (Cons i Nil) a))))
-for (i j l m a) in Int * Int * IntList * IntList * All case (PrintList (Cons i l) a) (Cons j m) j -> (Reset (ShowLn (Inject m (PrintList (Cons j (Cons i l)) a))))
-for (l a) in IntList * All case (PrintList l a) Nil Nil -> (Reset (Inject l (ReverseList Nil a)))
+for (i l a) in Int * IntList * All case (PrintList Nil a) (Cons i l) i . (ShowLn (Inject l (PrintList (Cons i Nil) a)))
+for (i j l m a) in Int * Int * IntList * IntList * All case (PrintList (Cons i l) a) (Cons j m) j . (ShowLn (Inject m (PrintList (Cons j (Cons i l)) a)))
+for (l a) in IntList * All case (PrintList l a) Nil Nil . (Inject l (ReverseList Nil a))
 
-for (a b) in All * All case (ReverseList b a) Nil b -> (Reset a)
-for (i l a) in Int * IntList * All case (ReverseList Nil a) (Cons i l) l -> (Reset (ReverseList (Cons i Nil) a))
-for (i j l m a) in Int * Int * IntList * IntList * All case (ReverseList (Cons i l) a) (Cons j m) m -> (Reset (ReverseList (Cons j (Cons i l)) a))
+for (a b) in All * All case (ReverseList b a) Nil b . a
+for (i l a) in Int * IntList * All case (ReverseList Nil a) (Cons i l) l . (ReverseList (Cons i Nil) a)
+for (i j l m a) in Int * Int * IntList * IntList * All case (ReverseList (Cons i l) a) (Cons j m) m . (ReverseList (Cons j (Cons i l)) a)
 ```
 
 ### **Not Implemented Yet**: Generic Sets
