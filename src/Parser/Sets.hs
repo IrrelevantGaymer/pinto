@@ -64,7 +64,7 @@ module Parser.Sets where {
         keys <- bKeys;
         return $ matchPat sets keys pat value;
     } where {
-        bKeys = getPatternKeys match set sets;
+        bKeys = getPatternKeys sets match set;
 
         matchPat :: Sets -> Keys -> Pat -> Pat -> Bool;
         matchPat ss ks m@(Value key) t = m == t || or (inShape t <$> mShape) where {
@@ -156,7 +156,7 @@ module Parser.Sets where {
         keys <- bKeys;
         return $ valueIn sets keys idcs value pat;
     } where {
-        bKeys = getPatternKeys match set sets;
+        bKeys = getPatternKeys sets match set;
 
         valueIn :: Sets -> Keys -> [Int] -> String -> Pat -> Bool;
         valueIn ss ks (i:is) k (Tuple vs) = or $ valueIn ss ks is k <$> vs !? i;
@@ -248,11 +248,11 @@ module Parser.Sets where {
         "Id %s should only be used for parsing set expressions"
         $ show set;
 
-    getPatternKeys :: Pat -> SetDef -> Sets -> Maybe Keys;
-    getPatternKeys (Value pat) def _ = Just [(pat, SetRef def)];
-    getPatternKeys (Num _) _ _ = error "Cannot use an integer for Universal Qualification identifiers";
-    getPatternKeys (List _) _ _ = undefined;
-    getPatternKeys (Tuple pats) set@(BinOpSet CartesianProduct _ _) sets = do {
+    getPatternKeys :: Sets -> Pat -> SetDef -> Maybe Keys;
+    getPatternKeys _ (Value pat) def = Just [(pat, SetRef def)];
+    getPatternKeys _ (Num _) _ = error "Cannot use an integer for Universal Qualification identifiers";
+    getPatternKeys _ (List _) _ = undefined;
+    getPatternKeys sets (Tuple pats) set@(BinOpSet CartesianProduct _ _) = do {
         (rest, keys) <- getKey pats set;
         if null rest then
             return keys;
@@ -264,7 +264,7 @@ module Parser.Sets where {
             (ps'', keys') <- getKey ps' setB';
             return (ps'', keys ++ keys');
         };
-        getKey (p:ps) s = (ps,) <$> getPatternKeys p s sets;
+        getKey (p:ps) s = (ps,) <$> getPatternKeys sets p s;
         getKey [] _ = Nothing;
     };
     getPatternKeys sets (Record vName vs) def
@@ -276,13 +276,13 @@ module Parser.Sets where {
         | otherwise = Nothing
     where {
         defShape = getPatternShape def sets;
-        getKeys ((idx, x):xs) idcs shp
-            | Value v <- x, V <- shp = ((v, IdxInSetRef (idcs ++ [idx]) def) :)
-                <$> getKeys xs idcs shp
-            | Tuple vs <- x, T l shp' <- shp = if l == length vs then
-                getKeys (zip [0..] vs) (idcs ++ [idx]) shp'
-            else
-                Nothing
+    getIdxKey :: [Int] -> SetDef -> PatShape -> (Int, Pat) -> Maybe Keys;
+    getIdxKey idcs def shp (idx, x)
+        | Value v <- x, V <- shp = Just [(v, IdxInSetRef (idcs ++ [idx]) def)]
+        | Tuple vs <- x, 
+          T shps <- shp, 
+          length vs == length shps
+        = concat <$> zipWithM (getIdxKey idcs def) shps (zip [0..] vs)
             | List _ <- x, L _ <- shp = undefined
         | Record vName vs <- x, 
           R sName shps <- shp, 

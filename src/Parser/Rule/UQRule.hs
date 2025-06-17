@@ -11,7 +11,7 @@ module Parser.Rule.UQRule where {
     
     showUQRule :: UQRule -> Sets -> String;
     showUQRule (UQRule pat patSet rules) sets = printf "UQRule {keys: %s, rules: [%s]}" (show keys) (showRules rules) where {
-        keys = getPatternKeys pat patSet sets;
+        keys = getPatternKeys sets pat patSet;
         showRules [SimpleRule basicRule] = show basicRule;
         showRules ((SimpleRule basicRule):rs) = show basicRule ++ ", " ++ showRules rs;
         showRules [ComplexRule uqRule] = showUQRule uqRule sets;
@@ -27,7 +27,7 @@ module Parser.Rule.UQRule where {
         (Tape tName tState tValues tIdx) = tape;
         (UQRule rPat rPatSet rRules) = rule;
         tValue = tValues !! tIdx;
-        keys = fromMaybe [] (getPatternKeys rPat rPatSet sets);
+        keys = fromMaybe [] (getPatternKeys sets rPat rPatSet);
 
         tryApply :: Keys -> [Rule] -> Maybe Tape;
         tryApply ks rs = join $ find isJust $ fmap (apply ks) rs;
@@ -55,7 +55,7 @@ module Parser.Rule.UQRule where {
         };
         apply ks (ComplexRule uqRule) = tryApply ks' rRules' where {
             (UQRule rPat' rPatSet' rRules') = uqRule;
-            ks' = ks ++ fromMaybe [] (getPatternKeys rPat' rPatSet' sets)
+            ks' = ks ++ fromMaybe [] (getPatternKeys sets rPat' rPatSet')
         };
 
         constructNewValue 
@@ -145,7 +145,7 @@ module Parser.Rule.UQRule where {
         (Tape _ tState tValues tIdx) = tape;
         (UQRule rPat rPatSet rRules) = rule;
         tValue = tValues !! tIdx;
-        keys' = keys ++ fromMaybe [] (getPatternKeys rPat rPatSet sets);
+        keys' = keys ++ fromMaybe [] (getPatternKeys sets rPat rPatSet);
 
         canApply :: Rule -> Bool;
         canApply (SimpleRule basicRule) = or $ matchPatKeys 
