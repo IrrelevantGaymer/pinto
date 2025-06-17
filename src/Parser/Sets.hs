@@ -2,7 +2,9 @@
 module Parser.Sets where {
     import Parser.Pattern (Pat, getShape, Pattern (..), PatShape, PatternShape (..));
     import Text.Printf (printf);
-
+    import Control.Arrow (Arrow(..));
+    import Control.Monad (zipWithM);
+    
     type UnOp = UnarySetOperation;
     data UnarySetOperation = PowerSet deriving(Show);
     type BinOp = BinarySetOperation;
@@ -19,7 +21,7 @@ module Parser.Sets where {
             buildPat    :: !Pat,
             buildMatch  :: !Pat,
             buildSetDef :: !SetDef
-        } | 
+        } |
         RecordSet {
             recordName :: !Pat,
             recordFields :: ![(Pat, SetDef)]
@@ -72,7 +74,7 @@ module Parser.Sets where {
             inShape v (SetRef shp) = valueInSet ss v shp;
             inShape (Value v) (IdxInSetRef i shp) = valueInIdxSet ss i v shp;
             --Maybe rewrite this.  I kinda hate converting the integer to a string
-            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet ss i (show v) shp; 
+            inShape (Num v) (IdxInSetRef i shp) = valueInIdxSet ss i (show v) shp;
             inShape _ _ = False;
 
             findByKey :: Eq b => (a -> b) -> b -> [a] -> Maybe a;
@@ -83,11 +85,11 @@ module Parser.Sets where {
         };
         matchPat _ _ (Num k) (Num t) = k == t;
         matchPat ss ks (Tuple mPats) (Tuple tPats)
-            | length mPats == length tPats = 
+            | length mPats == length tPats =
                 and $ uncurry (matchPat ss ks) <$> zip mPats tPats
             | otherwise = False;
         matchPat ss ks (List mPats) (List tPats)
-            | length mPats == length tPats = 
+            | length mPats == length tPats =
                 and $ uncurry (matchPat ss ks) <$> zip mPats tPats
             | otherwise = False;
         matchPat _ _ Discard _ = True;
@@ -138,7 +140,7 @@ module Parser.Sets where {
         (_:xs) !? idx
             | idx > 0   = xs !? (idx - 1)
             | otherwise = Nothing;
-    }; 
+    };
     valueInIdxSet sets idcs value (Word set)
         | Just All <- tryBuiltIn = null idcs
         | Just Int <- tryBuiltIn = null idcs
@@ -299,7 +301,7 @@ module Parser.Sets where {
           T shps <- shp, 
           length vs == length shps
         = concat <$> zipWithM (getIdxKey idcs def) shps (zip [0..] vs)
-            | List _ <- x, L _ <- shp = undefined
+        | List _ <- x, L _ <- shp = undefined
         | Record vName vs <- x, 
           R sName shps <- shp, 
           vName == sName, 
