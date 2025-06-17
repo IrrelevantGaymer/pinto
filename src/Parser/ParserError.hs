@@ -68,6 +68,10 @@ module Parser.ParserError where {
         } |
         CouldNotFindSet {
             received :: Atom Tkn
+        } |
+        Debug {
+            msg      :: String,
+            received :: Atom Tkn
         }
     deriving (Show);
 
