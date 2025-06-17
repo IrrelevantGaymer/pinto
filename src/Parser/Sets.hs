@@ -239,10 +239,10 @@ module Parser.Sets where {
         return $ combineShape shapeA shapeB;
     } where {
         combineShape a b
-            | (T i patA, T j patB) <- (a, b) = T (i + j) $ patA <> patB
-            | T i patA <- a = T (i + 1) $ patA <> b
-            | T j patB <- b = T (j + 1) $ patB <> a
-            | otherwise = T 2 $ a <> b
+            | (T patA, T patB) <- (a, b) = T $ patA ++ patB
+            | T patA <- a = T $ patA ++ [b]
+            | T patB <- b = T $ patB ++ [a]
+            | otherwise = T [a, b]
     };
     getPatternShape (Id set) _ = error $ printf
         "Id %s should only be used for parsing set expressions"
