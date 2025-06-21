@@ -27,43 +27,43 @@ map dec :: Decimal - {0} -> Decimal - {9} {
 
 // Incrementing Positive
 
-for a n in All * Decimal - {9} case (Inc a) (Pos n) (Pos inc[n]) -> (Reset a)
-for a   in All                 case (Inc a) (Pos 9) (Pos (1 0))  -> (Reset a)
+for (a n) in All * Decimal - {9} case (Inc a) (Pos n) (Pos inc[n]) -> (Reset a)
+for a     in All                 case (Inc a) (Pos 9) (Pos (1 0))  -> (Reset a)
 
-for a m n in All * Sexpr Decimal * Decimal - {9}
+for (a m n) in All * Sexpr Decimal * Decimal - {9}
     case (Inc a) (Pos (m n)) (Pos (m inc[n])) -> (Reset a)
-for a m   in All * Sexpr Decimal 
+for (a m)   in All * Sexpr Decimal 
     case (Inc a) (Pos (m 9)) (Pos m)          -> (Reset (Inc (Append 0 a)))
 
 // Incrementing Negative
 
-for a n in All * Decimal - {0} case (Dec a) (Pos n) (Pos dec[n]) -> (Reset a)
-for a   in All                 case (Dec a) (Pos 0) (Neg 1)      -> (Reset a)
+for (a n) in All * Decimal - {0} case (Dec a) (Pos n) (Pos dec[n]) -> (Reset a)
+for a     in All                 case (Dec a) (Pos 0) (Neg 1)      -> (Reset a)
 
-for a m n in All * Sexpr Decimal * Decimal - {0} 
+for (a m n) in All * Sexpr Decimal * Decimal - {0} 
     case (Inc a) (Neg (m n)) (Neg (m dec[n])) -> (Reset a)
-for a m   in All * Sexpr Decimal
+for (a m)   in All * Sexpr Decimal
     case (Inc a) (Neg (m 0)) (Neg m)          -> (Reset (Inc (Append 9 a)))
 
 // Decrementing Positive
 
-for a n in All * Decimal - {0} case (Dec a) (Pos n) (Pos dec[n]) -> (Reset a)
-for a   in All                 case (Dec a) (Pos 0) (Neg 1)      -> (Reset a)
+for (a n) in All * Decimal - {0} case (Dec a) (Pos n) (Pos dec[n]) -> (Reset a)
+for (a)   in All                 case (Dec a) (Pos 0) (Neg 1)      -> (Reset a)
 
-for a m n in All * Sexpr Decimal * Decimal - {0} 
+for (a m n) in All * Sexpr Decimal * Decimal - {0} 
     case (Dec a) (Pos (m n)) (Pos (m dec[n])) -> (Reset a)
-for a m   in All * Sexpr Decimal 
+for (a m)   in All * Sexpr Decimal 
     case (Dec a) (Pos (m 0)) (Pos m)          -> (Reset (Dec (Append 9 a)))
 
 // Decrementing Negative
 
-for a n in All * Decimal - {9} case (Dec a) (Neg n) (Neg inc[n]) -> (Reset a)
-for a   in All                 case (Dec a) (Neg 9) (Neg (0 1))  -> (Reset a)
+for (a n) in All * Decimal - {9} case (Dec a) (Neg n) (Neg inc[n]) -> (Reset a)
+for a     in All                 case (Dec a) (Neg 9) (Neg (0 1))  -> (Reset a)
 
-for a m n in All * Sexpr Decimal * Decimal - {9} 
+for (a m n) in All * Sexpr Decimal * Decimal - {9} 
     case (Dec a) (Neg (m n)) (Neg (m inc[n])) -> (NegReset a)
-for a m in Sexpr Decimal * All 
+for (a m) in Sexpr Decimal * All 
     case (Dec a) (Neg (9 n)) (Neg n)          -> (Reset (Dec (Append 0 a)))
 
-for a (sign m) n in All * SignedDecimal * Decimal case 
+for (a (sign m)) n in All * SignedDecimal * Decimal case 
     (Append n a) (sign m) (sign (m n)) -> (Reset a)
