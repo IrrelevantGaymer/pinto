@@ -1,5 +1,13 @@
 let Coord = {Coord in x: Int * y: Int}
 
-for {Coord where x y} in Coord case Flatten {Coord where x y} {Coord where x y: 0} -> Flatten
+for {Coord where x y} in Coord case 
+    Flatten 
+    {Coord where x y} 
+    {Coord where x y: 0} 
+-> Flatten
 
-start tape with Flatten = [{Coord where x: 6 y: 9} {Coord where x: 800 y: 85} end]
+start tape with Flatten = [
+    {Coord where x: 6 y: 9} 
+    {Coord where x: 800 y: 85} 
+    end
+]
